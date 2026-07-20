@@ -1,7 +1,12 @@
-"""Persona Composer — Streamlit playground (Vertex AI Gemini / Claude).
+"""Persona Composer — Streamlit playground (Vertex / OpenAI / Anthropic).
 
 Run from repo root:
   .venv/bin/streamlit run playground/app.py
+
+Optional API keys in repo-root `.env` (see `.env.example`):
+  OPENAI_API_KEY=...
+  ANTHROPIC_API_KEY=...
+Without those keys, only Vertex AI presets are shown.
 """
 
 from __future__ import annotations
@@ -16,11 +21,20 @@ _ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_ROOT / "src"))
 sys.path.insert(0, str(_ROOT))
 
-import streamlit as st
+from playground.llm import (  # noqa: E402
+    api_availability,
+    available_presets,
+    generate,
+    is_vertex,
+    load_env,
+)
 
-from playground.llm import MODEL_PRESETS, generate
-from playground.export import build_markdown, build_pdf, default_basename
-from playground.modules_io import (
+load_env(_ROOT)
+
+import streamlit as st  # noqa: E402
+
+from playground.export import build_markdown, build_pdf, default_basename  # noqa: E402
+from playground.modules_io import (  # noqa: E402
     compose_persona,
     ensure_typed_module,
     library_root,
@@ -30,7 +44,7 @@ from playground.modules_io import (
     write_output_rules_md,
     write_speech_md,
 )
-from playground.styles import inject_css
+from playground.styles import inject_css  # noqa: E402
 
 st.set_page_config(
     page_title="Persona Composer Playground",
@@ -64,12 +78,15 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+avail = api_availability()
+presets = available_presets(avail)
+
 # ---------------------------------------------------------------------------
-# Sidebar — Vertex / model
+# Sidebar — model backends
 # ---------------------------------------------------------------------------
 with st.sidebar:
     st.markdown('<div class="pc-brand">Persona ◆ Composer</div>', unsafe_allow_html=True)
-    st.caption("Compose modules → call Vertex AI → compare personas live")
+    st.caption("Compose modules → call an LLM → compare personas live")
 
     if st.button("Toggle theme", use_container_width=True):
         st.session_state.theme = (
@@ -78,32 +95,78 @@ with st.sidebar:
         st.rerun()
 
     st.divider()
-    st.subheader("Vertex AI")
-    project = st.text_input(
-        "GCP project",
-        value=os.environ.get("GOOGLE_CLOUD_PROJECT", os.environ.get("GCP_PROJECT", "")),
-        help="Uses Application Default Credentials (gcloud auth application-default login)",
+    st.subheader("Model")
+
+    bits = ["Vertex AI"]
+    if avail.openai:
+        bits.append("OpenAI ✓")
+    else:
+        bits.append("OpenAI (no key)")
+    if avail.anthropic:
+        bits.append("Anthropic ✓")
+    else:
+        bits.append("Anthropic (no key)")
+    st.caption(" · ".join(bits))
+
+    preset_labels = [m.label for m in presets] + ["Custom…"]
+    preset_ix = st.selectbox(
+        "Model preset",
+        range(len(preset_labels)),
+        format_func=lambda i: preset_labels[i],
     )
 
-    preset_labels = [m.label for m in MODEL_PRESETS] + ["Custom…"]
-    preset_ix = st.selectbox("Model preset", range(len(preset_labels)), format_func=lambda i: preset_labels[i])
+    project = os.environ.get("GOOGLE_CLOUD_PROJECT", os.environ.get("GCP_PROJECT", ""))
+    location = ""
+    provider: str
+    model_id: str
 
-    if preset_ix < len(MODEL_PRESETS):
-        preset = MODEL_PRESETS[preset_ix]
+    if preset_ix < len(presets):
+        preset = presets[preset_ix]
         provider = preset.provider
         model_id = st.text_input("Model id", value=preset.model_id)
-        location = st.text_input("Location", value=preset.default_location)
-        st.caption(f"Provider: **{provider}**")
+        if is_vertex(provider):  # type: ignore[arg-type]
+            project = st.text_input(
+                "GCP project",
+                value=project,
+                help="Application Default Credentials (gcloud auth application-default login)",
+            )
+            location = st.text_input("Location", value=preset.default_location)
+        st.caption(f"Backend: **{provider}**")
     else:
-        provider = st.selectbox("Provider", ["gemini", "claude"])
-        model_id = st.text_input("Model id", value="gemini-2.5-flash")
-        location = st.text_input(
-            "Location",
-            value="us-central1" if provider == "gemini" else "us-east5",
-        )
+        custom_options = ["vertex_gemini", "vertex_claude"]
+        if avail.openai:
+            custom_options.append("openai")
+        if avail.anthropic:
+            custom_options.append("anthropic")
+        provider = st.selectbox("Provider", custom_options)
+        defaults = {
+            "vertex_gemini": "gemini-2.5-flash",
+            "vertex_claude": "claude-sonnet-4@20250514",
+            "openai": "gpt-4.1",
+            "anthropic": "claude-sonnet-4-20250514",
+        }
+        model_id = st.text_input("Model id", value=defaults.get(provider, ""))
+        if is_vertex(provider):  # type: ignore[arg-type]
+            project = st.text_input(
+                "GCP project",
+                value=project,
+                help="Application Default Credentials",
+            )
+            location = st.text_input(
+                "Location",
+                value="us-central1" if provider == "vertex_gemini" else "us-east5",
+            )
 
     temperature = st.slider("Temperature", 0.0, 1.5, 0.7, 0.05)
-    max_tokens = st.number_input("Max tokens", min_value=256, max_value=8192, value=2048, step=256)
+    max_tokens = st.number_input(
+        "Max tokens", min_value=256, max_value=8192, value=2048, step=256
+    )
+
+    if not avail.openai and not avail.anthropic:
+        st.info(
+            "Only Vertex AI is available. Add `OPENAI_API_KEY` and/or "
+            "`ANTHROPIC_API_KEY` to `.env` in the repo root to unlock API backends."
+        )
 
     st.divider()
     lib = st.text_input(
@@ -458,9 +521,10 @@ with col_chat:
 st.divider()
 st.markdown(
     '<p class="pc-muted">'
-    "Auth: <code>gcloud auth application-default login</code>. "
-    "Claude models must be enabled in Vertex AI Model Garden for your project. "
-    "Gemini uses <code>google-genai</code>; Claude uses <code>anthropic[vertex]</code>."
+    "Vertex: <code>gcloud auth application-default login</code> + GCP project. "
+    "Optional API backends: put <code>OPENAI_API_KEY</code> / <code>ANTHROPIC_API_KEY</code> "
+    "in repo-root <code>.env</code> (see <code>.env.example</code>). "
+    "Without those keys, only Vertex presets appear."
     "</p>",
     unsafe_allow_html=True,
 )

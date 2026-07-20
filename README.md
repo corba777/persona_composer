@@ -117,15 +117,19 @@ From this repo (editable) or a path/git URL:
 
 ```bash
 pip install -e /path/to/persona_composer
-# or
-pip install "persona-composer @ git+https://github.com/<you>/persona_composer.git"
 ```
 
 Optional extras:
 
 ```bash
 pip install -e ".[dev]"          # pytest
-pip install -e ".[playground]"   # Streamlit demo + Vertex clients
+pip install -e ".[playground]"   # Streamlit demo (Vertex + optional OpenAI/Anthropic)
+```
+
+From GitHub:
+
+```bash
+pip install "persona-composer @ git+https://github.com/corba777/persona_composer.git"
 ```
 
 ### Library
@@ -170,14 +174,27 @@ persona-compose recompose run.json --module-root ... --out prompt.xml
 
 ### Playground (optional)
 
-Interactive Streamlit UI (Vertex Gemini / Claude Model Garden):
+Interactive Streamlit UI to compose a persona, call an LLM, and export Markdown/PDF.
+
+| Backend | When available |
+|---------|----------------|
+| **Vertex AI** (Gemini / Claude Model Garden) | Always (ADC + GCP project) |
+| **OpenAI API** | `OPENAI_API_KEY` set in `.env` |
+| **Anthropic API** | `ANTHROPIC_API_KEY` set in `.env` |
 
 ```bash
 pip install -e ".[playground]"
-gcloud auth application-default login
-export GOOGLE_CLOUD_PROJECT=your-project
+cp .env.example .env
+# edit .env:
+#   OPENAI_API_KEY=...          # optional
+#   ANTHROPIC_API_KEY=...       # optional
+#   GOOGLE_CLOUD_PROJECT=...    # optional default for Vertex UI
+
+gcloud auth application-default login   # for Vertex
 streamlit run playground/app.py
 ```
+
+Without API keys, the sidebar shows **Vertex presets only**. See [`.env.example`](./.env.example).
 
 ---
 
@@ -203,10 +220,10 @@ In your app, depend on the local package:
 }
 ```
 
-Or after publishing to a registry:
+Or from GitHub (after clone + build in `ts/`):
 
 ```bash
-npm install persona-composer
+npm install git+https://github.com/corba777/persona_composer.git#main
 ```
 
 Consumers need the built `dist/` (run `npm run build` in `ts/` after clone).
