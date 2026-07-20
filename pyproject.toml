@@ -1,0 +1,37 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "persona-composer"
+version = "0.1.0"
+description = "Prompt compiler: modular Markdown → XML system prompts + experiment manifests"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+]
+playground = [
+  "streamlit>=1.32",
+  "google-genai>=1.0",
+  "anthropic[vertex]>=0.40",
+  "fpdf2>=2.7",
+]
+
+[project.scripts]
+persona-compose = "persona_composer.cli:main"
+
+[tool.hatch.build.targets.wheel]
+only-include = ["persona_composer"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/persona_composer" = "persona_composer"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

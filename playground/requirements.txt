@@ -1,0 +1,6 @@
+# Install: .venv/bin/pip install -e ".[playground]"
+# Or:      .venv/bin/pip install -r playground/requirements.txt && .venv/bin/pip install -e .
+streamlit>=1.32
+google-genai>=1.0
+anthropic[vertex]>=0.40
+fpdf2>=2.7
