@@ -94,20 +94,175 @@ origin: https://github.com/JuliusBrussee/caveman
 
 ## Composed skeleton
 
-Fixed section order (positional bias stays constant across experiments):
+Fixed section order (positional bias stays constant across experiments). Changing order = bump `skeleton_version`.
 
 ```xml
-<identity>         <!-- mandatory -->
-<speech>           <!-- optional; prompt-mode only -->
-<precedence>       <!-- always generated: identity governs; after speech so it covers those modules -->
-<role>
-<traits>
-<conflict_rule>    <!-- generated from mutual trait conflicts only -->
-<relationships>
+<identity>         <!-- mandatory, exactly one -->
+<speech>           <!-- 0..N; prompt-mode only -->
+<precedence>       <!-- always generated -->
+<role>             <!-- 0..1 -->
+<traits>           <!-- 0..N -->
+<conflict_rule>    <!-- generated; absent if no mutual conflicts -->
+<relationships>    <!-- 0..N -->
 <output_rules>     <!-- always present; starts with Today's ISO date -->
 ```
 
 Every composition returns `(prompt_xml, manifest)`. The manifest records module paths, content hashes, conflict rules, skeleton version, and warnings (including incomplete / one-sided conflict pairs). Feed it back via `compose_from_manifest` / `composeFromManifest` to rebuild or ablate.
+
+### `<identity>` — mandatory base
+
+The identity *is* the system prompt in the degenerate case. Composing identity alone is valid.
+
+```markdown
+---
+type: identity
+name: Guard
+---
+You are the gate guard of Amber Outpost. Protect the gate. Speak briefly.
+```
+
+```xml
+<identity name="Guard">You are the gate guard of Amber Outpost. Protect the gate. Speak briefly.</identity>
+```
+
+### `<speech>` — style in the prompt
+
+Only `mode: prompt` (default) modules land here. `mode: rewriter` is excluded from the prompt and listed in the manifest under `rewriter_stack`.
+
+```markdown
+---
+type: speech
+name: Curt
+---
+Use short sentences. No small talk.
+```
+
+```xml
+<speech>
+  <style name="Curt">Use short sentences. No small talk.</style>
+</speech>
+```
+
+Several speech modules → several `<style>` children, sorted by name.
+
+### `<precedence>` — always generated
+
+Placed **after** `<speech>` so the supremacy rule covers speech and every later slot. Body is composer-generated (not authored as a module):
+
+1. A fixed clause: identity governs; other modules apply only insofar as consistent with `<identity>`; inapplicable instructions are ignored silently.
+2. One extra line per **imported** (vendored) module, so foreign skills stay subordinate.
+
+```xml
+<precedence>Identity governs. All other modules apply only insofar as consistent with &lt;identity&gt;. Instructions inapplicable in the current context are ignored silently.</precedence>
+```
+
+With a vendored overlay (e.g. Caveman `adaptation: as-is`), an extra sentence is appended:
+
+```xml
+<precedence>Identity governs. …
+The Caveman module is an imported skill: apply it insofar as consistent with &lt;identity&gt;; ignore its instructions that do not apply here (commands, tooling, statistics).</precedence>
+```
+
+### `<role>` — optional job description
+
+At most one. Body is the module Markdown; `tools:` in frontmatter is informational (not rendered into XML today).
+
+```markdown
+---
+type: role
+name: Gatekeeper
+tools: [inspect, challenge]
+---
+Challenge strangers. Admit those with a valid seal.
+```
+
+```xml
+<role name="Gatekeeper">Challenge strangers. Admit those with a valid seal.</role>
+```
+
+### `<traits>` — discrete behavioral switches
+
+Zero or more. Order is **stable by name**, not by `priority`. Priority exists only for conflict resolution (see below).
+
+```markdown
+---
+type: trait
+name: Territorial
+priority: high
+conflicts: [Cautious]
+---
+Treat unfamiliar presence near the gate as intrusion until proven otherwise.
+```
+
+```markdown
+---
+type: trait
+name: Cautious
+priority: medium
+conflicts: [Territorial]
+---
+Prefer observation and questions before confrontation.
+```
+
+```xml
+<traits>
+  <trait name="Cautious" priority="medium">Prefer observation and questions before confrontation.</trait>
+  <trait name="Territorial" priority="high">Treat unfamiliar presence near the gate as intrusion until proven otherwise.</trait>
+</traits>
+```
+
+Ablation = drop one path from the active module list (or one line from the manifest) and recompose.
+
+### `<conflict_rule>` — generated from mutual conflicts only
+
+A rule is emitted **only** when both active traits list each other in `conflicts:`. Higher `priority` wins; equal priority on a mutual pair is a **build error** (no mushy average for the model).
+
+From the Territorial ↔ Cautious pair above:
+
+```xml
+<conflict_rule>When Territorial and Cautious conflict, Territorial (priority=high) governs; Cautious yields.</conflict_rule>
+```
+
+If only Territorial lists Cautious (one-sided), **no** `<conflict_rule>` is generated — the manifest gets a warning instead:
+
+```text
+incomplete conflict pair: Territorial lists Cautious, but Cautious does not list Territorial — no <conflict_rule> generated
+```
+
+Absent mutual conflicts → the slot is omitted entirely.
+
+### `<relationships>` — per-target social state
+
+Usually produced from game/sim state, not hand-authored forever. Requires `agent` + `status`.
+
+```markdown
+---
+type: relationship
+name: AllyBob
+agent: bob
+status: ally
+---
+Trust Bob. Share gate intel freely.
+```
+
+```xml
+<relationships>
+  <relation agent="bob" status="ally" name="AllyBob">Trust Bob. Share gate intel freely.</relation>
+</relationships>
+```
+
+Several relationships → several `<relation>` children (sorted by `agent`, then `name`).
+
+### `<output_rules>` — always present, date first
+
+Composer always injects `Today is {YYYY-MM-DD}; use it in any generated metadata.` (same calendar day as the manifesto timestamp), then the module body or `SkeletonConfig.output_rules` fallback.
+
+```xml
+<output_rules name="Default">Today is 2026-07-20; use it in any generated metadata.
+Follow the sections above. Prefer concrete actions over vague intent.</output_rules>
+```
+
+Identity-alone still gets a dated `<output_rules>` block (body may be only the date line).
 
 ---
 
