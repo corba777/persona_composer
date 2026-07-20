@@ -11,3 +11,4 @@ node_modules/
 ts/dist/
 .env
 .env.local
+ts/test/.tmp-drafts/

@@ -148,8 +148,8 @@ compose_from_manifest(manifest, skeleton=default) →   # recipe path: resolve p
 
 ## Roadmap notes (context for future sessions)
 
-- **Decomposition workflow**: helper that takes a monolithic identity.md **or a vendored foreign skill** and suggests candidate trait/speech extractions (LLM-assisted, offline, writes draft overlay modules for human review). Covers both migration from "one big system prompt" projects and distillation of imported community skills (`adaptation: extracted`).
-- Rewriter pipeline runner (for `speech.mode: rewriter`) — separate small module; keeps style causally decoupled from policy for experiments (style-in-prompt vs style-on-output is itself a measured comparison).
+- **Decomposition workflow** ✅ (library + CLI): `decompose()` — LLM-assisted via injected `llm_call` / offline `llm_response` JSON; writes draft overlay modules for human review. Core never calls a model.
+- **Rewriter pipeline runner** ✅ (library + CLI stub): `apply_rewriters*` — post-generation style pass for `speech.mode: rewriter`; empty `rewriter_stack` is a no-op (backward compatible).
 - Factorial experiment helper: given a trait list, emit the 2^k manifest set for ablation studies.
 - Persistence measurement harness lives in Amber Blade, not here — but manifests must carry enough info (hashes, versions) for its logs to join against.
 

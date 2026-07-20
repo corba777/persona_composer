@@ -172,6 +172,49 @@ persona-compose compose --identity ... --module-root ... [modules...] --out prom
 persona-compose recompose run.json --module-root ... --out prompt.xml
 ```
 
+### Decompose & rewrite (optional, additive)
+
+Both keep **backward compatibility**: `compose` / manifests unchanged. The core **never** calls an LLM — you inject a callable or pass a precomputed response.
+
+**Decompose** a monolith or vendored skill into draft modules:
+
+```python
+from persona_composer import decompose
+
+result = decompose(
+    Path("agent/identity.md"),
+    llm_call=my_llm,          # or llm_response=json_text
+    out_dir=Path("drafts"),
+    source_relpath="vendor/foo/SKILL.md",  # optional extracted provenance
+)
+# Review drafts under drafts/, then compose as usual
+```
+
+```bash
+# 1) optional: write the prompt for your LLM
+persona-compose decompose identity.md --llm-response /dev/null --prompt-out /tmp/p.txt --no-write
+# 2) after the model returns JSON:
+persona-compose decompose identity.md --llm-response /tmp/answer.json --out-dir drafts/
+```
+
+**Rewrite** model output with `speech.mode: rewriter` modules (from paths or manifest `rewriter_stack`):
+
+```python
+from persona_composer import compose, apply_rewriters_from_manifest
+
+composed = compose(identity, [rewriter_speech], module_root=ROOT)
+draft = call_llm(system=composed.prompt_xml, user=user_msg)
+final = apply_rewriters_from_manifest(
+    draft, composed.manifest, llm_call=my_rewrite_llm, module_root=ROOT
+).text
+# Empty rewriter_stack → no-op (returns draft unchanged)
+```
+
+```bash
+persona-compose rewrite --text "Hello" --modules speech/fancy_rewriter.md --stub
+persona-compose rewrite --text-file out.txt --from-manifest run.json --stub
+```
+
 ### Playground (optional)
 
 Interactive Streamlit UI to compose a persona, call an LLM, and export Markdown/PDF.

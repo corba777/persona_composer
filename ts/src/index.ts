@@ -2,6 +2,13 @@
 
 export { compose, composeFromManifest } from "./compose.js";
 export type { CompositionResult, ComposeOptions } from "./compose.js";
+export {
+  buildDecomposePrompt,
+  decompose,
+  parseDecompositionResponse,
+  writeDraftModules,
+} from "./decompose.js";
+export type { DecompositionResult, ModuleSuggestion } from "./decompose.js";
 export { CompositionError, ValidationError } from "./errors.js";
 export {
   DEFAULT_OUTPUT_RULES,
@@ -17,3 +24,9 @@ export type {
 export { parseModule, parseModules, splitFrontmatter } from "./parse.js";
 export { DEFAULT_REGISTRY, TypeRegistry } from "./registry.js";
 export { renderPrompt } from "./render.js";
+export {
+  applyRewriters,
+  applyRewritersFromManifest,
+  applyRewritersFromPaths,
+} from "./rewriter.js";
+export type { RewriteResult } from "./rewriter.js";
