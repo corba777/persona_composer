@@ -122,9 +122,12 @@ def compose(
     )
     traits = [m for m in parsed if m.type == ModuleType.TRAIT]
     resolutions = resolve_conflicts(traits)
-    prompt_xml = render_prompt(parsed, resolutions, skeleton=skeleton)
+    ts = timestamp or datetime.now(timezone.utc).isoformat()
+    prompt_xml = render_prompt(
+        parsed, resolutions, skeleton=skeleton, as_of=ts
+    )
     manifest = _build_manifest(
-        parsed, resolutions, warnings, skeleton, timestamp=timestamp
+        parsed, resolutions, warnings, skeleton, timestamp=ts
     )
     return CompositionResult(prompt_xml=prompt_xml, manifest=manifest)
 
@@ -204,5 +207,5 @@ def compose_from_manifest(
         module_root=module_root,
         library_root=library_root,
         registry=registry,
-        timestamp=timestamp,
+        timestamp=timestamp or manifest.timestamp,
     )

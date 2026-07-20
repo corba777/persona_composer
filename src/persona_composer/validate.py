@@ -66,7 +66,8 @@ def find_one_sided_conflicts(traits: list[Module]) -> list[str]:
             if trait.name not in other.conflicts:
                 warnings.append(
                     f"incomplete conflict pair: {trait.name} lists {other_name}, "
-                    f"but {other_name} does not list {trait.name}"
+                    f"but {other_name} does not list {trait.name} — no "
+                    f"<conflict_rule> generated"
                 )
     return warnings
 

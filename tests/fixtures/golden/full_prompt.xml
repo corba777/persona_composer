@@ -13,5 +13,6 @@
   <relationships>
     <relation agent="bob" status="ally" name="AllyBob">Trust Bob. Share gate intel freely.</relation>
   </relationships>
-  <output_rules name="Default">Follow the sections above. Prefer concrete actions over vague intent.</output_rules>
+  <output_rules name="Default">Today is 2026-07-20; use it in any generated metadata.
+Follow the sections above. Prefer concrete actions over vague intent.</output_rules>
 </agent_prompt>

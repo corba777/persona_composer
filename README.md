@@ -69,10 +69,12 @@ Treat unfamiliar presence near the gate as intrusion until proven otherwise.
 |------|----------|--------|
 | `identity` | **yes** (exactly one) | May be a full monolith; composing identity alone is valid |
 | `role` | no (0..1) | Optional `tools:` list |
-| `trait` | no (0..N) | `priority` required; conflicts must be **mutual** |
+| `trait` | no (0..N) | `priority` required; conflicts must be **mutual** (one-sided → manifest warning, no rule) |
 | `speech` | no (0..N) | `mode: prompt` (default) or `rewriter` (excluded from prompt, listed in manifest) |
 | `relationship` | no (0..N) | Requires `agent` + `status` |
-| `output_rules` | no (0..1) | Else optional `SkeletonConfig.output_rules`; else slot omitted |
+| `output_rules` | no (0..1) | Else optional `SkeletonConfig.output_rules` body; slot **always** includes `Today is {YYYY-MM-DD}; …` |
+
+Built-in types above are registered in `TypeRegistry` (`registry.py` / `registry.ts`). v1 does not ship a public plugin loader yet — extending the registry is the intended hook for new module types.
 
 **Vendor overlays** (reuse upstream skills without editing them):
 
@@ -96,16 +98,16 @@ Fixed section order (positional bias stays constant across experiments):
 
 ```xml
 <identity>         <!-- mandatory -->
-<speech>           <!-- optional -->
-<precedence>       <!-- always generated: identity governs -->
+<speech>           <!-- optional; prompt-mode only -->
+<precedence>       <!-- always generated: identity governs; after speech so it covers those modules -->
 <role>
 <traits>
-<conflict_rule>    <!-- generated from mutual trait conflicts -->
+<conflict_rule>    <!-- generated from mutual trait conflicts only -->
 <relationships>
-<output_rules>     <!-- optional -->
+<output_rules>     <!-- always present; starts with Today's ISO date -->
 ```
 
-Every composition returns `(prompt_xml, manifest)`. The manifest records module paths, content hashes, conflict rules, skeleton version, and warnings. Feed it back via `compose_from_manifest` / `composeFromManifest` to rebuild or ablate.
+Every composition returns `(prompt_xml, manifest)`. The manifest records module paths, content hashes, conflict rules, skeleton version, and warnings (including incomplete / one-sided conflict pairs). Feed it back via `compose_from_manifest` / `composeFromManifest` to rebuild or ablate.
 
 ---
 
@@ -239,6 +241,8 @@ streamlit run playground/app.py
 
 Without API keys, the sidebar shows **Vertex presets only**. See [`.env.example`](./.env.example).
 
+MD/PDF exports include the full experiment **manifest** (module hashes) so a run is reproducible.
+
 ---
 
 ## Integrate into a TypeScript / Node project
@@ -341,10 +345,12 @@ pytest
 cd ts && npm test
 ```
 
+CI (`.github/workflows/ci.yml`) runs both on every push/PR so golden XML stays the cross-language contract.
+
 No LLM calls in unit tests — this repo tests the compiler, not model behavior.
 
 ---
 
 ## License / scope
 
-Personal instrument for multi-agent experiments (games NPCs, process sims, MAS). Not aiming at a plugin marketplace or framework lock-in. See [`CLAUDE.md`](./CLAUDE.md) for anti-goals and the full schema.
+MIT — see [`LICENSE`](./LICENSE). Personal instrument for multi-agent experiments (game NPCs, process sims, MAS). Not aiming at a plugin marketplace or framework lock-in. See [`CLAUDE.md`](./CLAUDE.md) for anti-goals and the full schema.

@@ -37,7 +37,7 @@ class SpeechMode(str, Enum):
     REWRITER = "rewriter"
 
 
-SKELETON_VERSION = "2"
+SKELETON_VERSION = "3"
 
 # Convenience default when callers want the old always-on text via SkeletonConfig.
 DEFAULT_OUTPUT_RULES = (
@@ -45,12 +45,32 @@ DEFAULT_OUTPUT_RULES = (
 )
 
 
+def today_line(as_of: str) -> str:
+    """Calendar date line injected into <output_rules> (YYYY-MM-DD)."""
+    day = as_of[:10] if as_of else ""
+    if len(day) != 10:
+        from datetime import datetime, timezone
+
+        day = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    return f"Today is {day}; use it in any generated metadata."
+
+
+def with_today_line(body: str, as_of: str) -> str:
+    line = today_line(as_of)
+    body = (body or "").strip()
+    if not body:
+        return line
+    # Single newline: ElementTree/minidom would collapse a blank line anyway,
+    # and TS must match the golden byte-for-byte.
+    return f"{line}\n{body}"
+
+
 @dataclass(frozen=True)
 class SkeletonConfig:
     """Skeleton knobs not derived from modules.
 
-    ``output_rules`` is a fallback when no ``type: output_rules`` module is active.
-    Empty string = omit the ``<output_rules>`` slot (unless a module provides it).
+    ``output_rules`` is a fallback body when no ``type: output_rules`` module is
+    active. The slot always renders (at least the injected ``Today is …`` line).
     """
 
     version: str = SKELETON_VERSION

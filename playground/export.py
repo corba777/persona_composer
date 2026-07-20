@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
+from typing import Any
 
 
 def build_markdown(
@@ -17,6 +19,7 @@ def build_markdown(
     user_message: str,
     system_prompt: str,
     model_output: str,
+    manifest: dict[str, Any] | None = None,
 ) -> str:
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     parts = [
@@ -47,6 +50,17 @@ def build_markdown(
         model_output.strip() or "_(no output)_",
         "",
     ]
+    if manifest is not None:
+        parts.extend(
+            [
+                "## Experiment manifest",
+                "",
+                "```json",
+                json.dumps(manifest, indent=2).rstrip(),
+                "```",
+                "",
+            ]
+        )
     return "\n".join(parts)
 
 
@@ -77,6 +91,7 @@ def build_pdf(
     user_message: str,
     system_prompt: str,
     model_output: str,
+    manifest: dict[str, Any] | None = None,
 ) -> bytes:
     from fpdf import FPDF
 
@@ -102,7 +117,6 @@ def build_pdf(
 
     def body(text: str, size: int = 10) -> None:
         pdf.set_font(font_name, size=size)
-        # multi_cell needs clean newlines; avoid nulls
         safe = (text or "").replace("\r\n", "\n").replace("\r", "\n")
         if not safe.strip():
             safe = "(empty)"
@@ -130,6 +144,10 @@ def build_pdf(
 
     heading("Model output")
     body(model_output)
+
+    if manifest is not None:
+        heading("Experiment manifest")
+        body(json.dumps(manifest, indent=2), size=7)
 
     if font_path is None:
         pdf.set_font("Helvetica", size=8)

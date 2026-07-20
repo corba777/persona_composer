@@ -11,6 +11,7 @@ from persona_composer.models import (
     ModuleType,
     SkeletonConfig,
     SpeechMode,
+    with_today_line,
 )
 
 
@@ -33,8 +34,13 @@ def render_prompt(
     resolutions: list[ConflictResolution],
     *,
     skeleton: SkeletonConfig | None = None,
+    as_of: str | None = None,
 ) -> str:
-    """Render the fixed-order XML system prompt."""
+    """Render the fixed-order XML system prompt.
+
+    ``as_of`` is an ISO timestamp or YYYY-MM-DD; its calendar date is injected
+    into ``<output_rules>`` so models do not invent stale years in metadata.
+    """
     skeleton = skeleton or SkeletonConfig()
 
     identity = next(m for m in modules if m.type == ModuleType.IDENTITY)
@@ -62,6 +68,7 @@ def render_prompt(
         for s in speeches:
             _append_block(speech_wrap, "style", s.render_body, name=s.name)
 
+    # Precedence follows speech (and applies to all non-identity modules above/below).
     precedence = ET.SubElement(root, "precedence")
     lines = [
         "Identity governs. All other modules apply only insofar as consistent "
@@ -110,12 +117,14 @@ def render_prompt(
                 name=r.name,
             )
 
-    # Module body wins; else skeleton fallback; else omit (optional slot).
+    # Always emit <output_rules> with today's date (plus module/skeleton body if any).
     if output_modules:
         out = output_modules[0]
-        _append_block(root, "output_rules", out.render_body, name=out.name)
-    elif skeleton.output_rules.strip():
-        _append_block(root, "output_rules", skeleton.output_rules.strip())
+        body = with_today_line(out.render_body, as_of or "")
+        _append_block(root, "output_rules", body, name=out.name)
+    else:
+        body = with_today_line(skeleton.output_rules, as_of or "")
+        _append_block(root, "output_rules", body)
 
     return _serialize(root)
 

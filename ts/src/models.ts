@@ -12,10 +12,26 @@ export type Priority = "high" | "medium" | "low";
 export type Adaptation = "as-is" | "extracted";
 export type SpeechMode = "prompt" | "rewriter";
 
-export const SKELETON_VERSION = "2";
+export const SKELETON_VERSION = "3";
 
 export const DEFAULT_OUTPUT_RULES =
   "Follow the sections above. Prefer concrete actions over vague intent.";
+
+export function todayLine(asOf: string): string {
+  let day = (asOf || "").slice(0, 10);
+  if (day.length !== 10) {
+    day = new Date().toISOString().slice(0, 10);
+  }
+  return `Today is ${day}; use it in any generated metadata.`;
+}
+
+export function withTodayLine(body: string, asOf: string): string {
+  const line = todayLine(asOf);
+  const trimmed = (body || "").trim();
+  if (!trimmed) return line;
+  // Single newline to match Python golden (minidom also drops blank lines).
+  return `${line}\n${trimmed}`;
+}
 
 export const PRIORITY_RANK: Record<Priority, number> = {
   high: 3,

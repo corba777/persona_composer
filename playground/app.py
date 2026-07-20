@@ -11,6 +11,7 @@ Without those keys, only Vertex AI presets are shown.
 
 from __future__ import annotations
 
+import json
 import os
 import sys
 import tempfile
@@ -65,6 +66,8 @@ if "last_user_msg" not in st.session_state:
     st.session_state.last_user_msg = ""
 if "last_meta" not in st.session_state:
     st.session_state.last_meta = {}
+if "last_manifest" not in st.session_state:
+    st.session_state.last_manifest = None
 if "work_dir" not in st.session_state:
     st.session_state.work_dir = tempfile.mkdtemp(prefix="persona_ui_")
 
@@ -379,6 +382,7 @@ with col_persona:
             composed_xml = bundle.prompt_xml
             warnings = bundle.warnings
             st.session_state.last_prompt = composed_xml
+            st.session_state.last_manifest = json.loads(bundle.manifest_json)
         except Exception as exc:
             st.error(f"Compose failed: {exc}")
     else:
@@ -471,6 +475,7 @@ with col_chat:
             user_message=st.session_state.last_user_msg or user_msg,
             system_prompt=st.session_state.last_prompt or composed_xml,
             model_output=st.session_state.last_response,
+            manifest=st.session_state.last_manifest,
         )
         base = default_basename()
         dl1, dl2 = st.columns(2)
@@ -494,6 +499,7 @@ with col_chat:
                     user_message=st.session_state.last_user_msg or user_msg,
                     system_prompt=st.session_state.last_prompt or composed_xml,
                     model_output=st.session_state.last_response,
+                    manifest=st.session_state.last_manifest,
                 )
                 st.download_button(
                     label="Download PDF",

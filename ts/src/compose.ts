@@ -127,13 +127,14 @@ export function compose(
   });
   const traits = parsed.filter((m) => m.type === "trait");
   const resolutions = resolveConflicts(traits);
-  const promptXml = renderPrompt(parsed, resolutions, skeleton);
+  const ts = options.timestamp ?? new Date().toISOString();
+  const promptXml = renderPrompt(parsed, resolutions, skeleton, ts);
   const manifest = buildManifest(
     parsed,
     resolutions,
     warnings,
     skeleton,
-    options.timestamp,
+    ts,
   );
   return toResult(promptXml, manifest);
 }
@@ -239,5 +240,6 @@ export function composeFromManifest(
   return compose(identity, others, {
     ...options,
     skeleton,
+    timestamp: options.timestamp ?? manifest.timestamp,
   });
 }

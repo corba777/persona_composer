@@ -23,13 +23,14 @@ def test_identity_alone_valid_xml(identity_path: Path, modules_root: Path) -> No
         library_root=modules_root,
         timestamp=FIXED_TS,
     )
-    # Property: well-formed XML; output_rules optional when unset
+    # Property: well-formed XML; output_rules always carries today's date
     ET.fromstring(result.prompt_xml)
     assert "<identity" in result.prompt_xml
     assert "<precedence>" in result.prompt_xml
-    assert "<output_rules>" not in result.prompt_xml
+    assert "<output_rules>" in result.prompt_xml
+    assert "Today is 2026-07-20;" in result.prompt_xml
     assert "<traits>" not in result.prompt_xml
-    assert result.manifest.skeleton_version == "2"
+    assert result.manifest.skeleton_version == "3"
     assert len(result.manifest.modules) == 1
 
 
@@ -42,6 +43,7 @@ def test_output_rules_module(identity_path: Path, modules_root: Path) -> None:
         timestamp=FIXED_TS,
     )
     assert '<output_rules name="Concise">' in result.prompt_xml
+    assert "Today is 2026-07-20;" in result.prompt_xml
     assert "fewest words" in result.prompt_xml
 
 
@@ -57,6 +59,7 @@ def test_output_rules_skeleton_fallback(
         skeleton=SkeletonConfig(output_rules=DEFAULT_OUTPUT_RULES),
     )
     assert "<output_rules>" in result.prompt_xml
+    assert "Today is 2026-07-20;" in result.prompt_xml
     assert DEFAULT_OUTPUT_RULES in result.prompt_xml
 
 

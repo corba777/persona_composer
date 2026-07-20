@@ -14,6 +14,8 @@ export {
   DEFAULT_OUTPUT_RULES,
   SKELETON_VERSION,
   skeletonConfig,
+  todayLine,
+  withTodayLine,
 } from "./models.js";
 export type {
   Manifest,

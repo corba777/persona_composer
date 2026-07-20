@@ -19,7 +19,7 @@ const FIXED_TS = "2026-07-20T15:00:00+00:00";
 const identity = path.join(MODULES, "identity", "guard.md");
 
 describe("compose", () => {
-  it("identity alone yields valid XML without output_rules", () => {
+  it("identity alone yields valid XML with dated output_rules", () => {
     const result = compose(identity, [], {
       moduleRoot: MODULES,
       libraryRoot: MODULES,
@@ -27,8 +27,9 @@ describe("compose", () => {
     });
     expect(result.promptXml).toContain("<identity");
     expect(result.promptXml).toContain("<precedence>");
-    expect(result.promptXml).not.toContain("<output_rules>");
-    expect(result.manifest.skeleton_version).toBe("2");
+    expect(result.promptXml).toContain("<output_rules>");
+    expect(result.promptXml).toContain("Today is 2026-07-20;");
+    expect(result.manifest.skeleton_version).toBe("3");
     expect(result.manifest.modules).toHaveLength(1);
   });
 
@@ -59,6 +60,7 @@ describe("compose", () => {
       { moduleRoot: MODULES, libraryRoot: MODULES, timestamp: FIXED_TS },
     );
     expect(result.promptXml).toContain('<output_rules name="Concise">');
+    expect(result.promptXml).toContain("Today is 2026-07-20;");
     expect(result.promptXml).toContain("fewest words");
   });
 
@@ -70,6 +72,7 @@ describe("compose", () => {
       skeleton: { output_rules: DEFAULT_OUTPUT_RULES },
     });
     expect(result.promptXml).toContain("<output_rules>");
+    expect(result.promptXml).toContain("Today is 2026-07-20;");
     expect(result.promptXml).toContain(DEFAULT_OUTPUT_RULES);
   });
 

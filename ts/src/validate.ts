@@ -78,7 +78,8 @@ export function findOneSidedConflicts(traits: Module[]): string[] {
       if (!other.conflicts.includes(trait.name)) {
         warnings.push(
           `incomplete conflict pair: ${trait.name} lists ${otherName}, ` +
-            `but ${otherName} does not list ${trait.name}`,
+            `but ${otherName} does not list ${trait.name} — no ` +
+            `<conflict_rule> generated`,
         );
       }
     }

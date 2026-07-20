@@ -10,6 +10,7 @@ import {
   isImported,
   renderBody,
   skeletonConfig,
+  withTodayLine,
 } from "./models.js";
 
 function escapeXml(text: string): string {
@@ -41,6 +42,7 @@ export function renderPrompt(
   modules: Module[],
   resolutions: ConflictResolution[],
   skeleton?: SkeletonConfig,
+  asOf?: string,
 ): string {
   const sk = skeletonConfig(skeleton);
 
@@ -145,10 +147,16 @@ export function renderPrompt(
   if (outputModules.length) {
     const out = outputModules[0]!;
     lines.push(
-      block("output_rules", renderBody(out), [["name", out.name]]),
+      block(
+        "output_rules",
+        withTodayLine(renderBody(out), asOf ?? ""),
+        [["name", out.name]],
+      ),
     );
-  } else if (sk.output_rules.trim()) {
-    lines.push(block("output_rules", sk.output_rules.trim()));
+  } else {
+    lines.push(
+      block("output_rules", withTodayLine(sk.output_rules, asOf ?? "")),
+    );
   }
 
   lines.push("</agent_prompt>");
