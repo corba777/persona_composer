@@ -5,9 +5,23 @@ build-backend = "hatchling.build"
 [project]
 name = "persona-composer"
 version = "0.1.0"
-description = "Prompt compiler: modular Markdown → XML system prompts + experiment manifests"
+description = "Prompt compiler: modular Markdown → XML system prompts + experiment manifests for LLM agents"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
+authors = [{ name = "Artem Zvyagintsev" }]
+keywords = [
+  "prompt",
+  "llm",
+  "agents",
+  "multi-agent",
+  "mcp",
+  "system-prompt",
+  "persona",
+  "markdown",
+  "xml",
+]
 dependencies = [
   "pyyaml>=6.0",
 ]

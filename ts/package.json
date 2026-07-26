@@ -1,7 +1,20 @@
 {
   "name": "persona-composer",
   "version": "0.1.0",
-  "description": "Prompt compiler: modular Markdown → XML system prompts + experiment manifests",
+  "description": "Prompt compiler: modular Markdown → XML system prompts + experiment manifests for LLM agents",
+  "license": "MIT",
+  "author": "Artem Zvyagintsev",
+  "keywords": [
+    "prompt",
+    "llm",
+    "agents",
+    "multi-agent",
+    "mcp",
+    "system-prompt",
+    "persona",
+    "markdown",
+    "xml"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

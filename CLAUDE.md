@@ -13,6 +13,8 @@ Primary consumers (all internal projects of the author):
 
 Not a goal: becoming a general-purpose framework, a public plugin marketplace, or adoption metrics. This is a personal instrument extracted from real experiments. Thin in-process plugins (new module types via a registry) are welcome when they stay simple.
 
+**License:** MIT — see [`LICENSE`](./LICENSE) at the repo root.
+
 ## Core design decisions (do not silently change these)
 
 1. **`identity` is MANDATORY; everything else is optional.**

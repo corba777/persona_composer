@@ -617,4 +617,6 @@ No LLM calls in unit tests — this repo tests the compiler, not model behavior.
 
 ## License / scope
 
-MIT — see [`LICENSE`](./LICENSE). Personal instrument for multi-agent experiments (game NPCs, process sims, MAS). Not aiming at a plugin marketplace or framework lock-in. See [`CLAUDE.md`](./CLAUDE.md) for anti-goals and the full schema.
+**MIT License** — full text in [`LICENSE`](./LICENSE) (Copyright © 2026 Artem Zvyagintsev).
+
+You may use, copy, modify, and distribute this software under MIT terms. This is a personal instrument for multi-agent experiments (game NPCs, process sims, MAS) — not a plugin marketplace or framework lock-in. See [`CLAUDE.md`](./CLAUDE.md) for anti-goals and the full schema.
