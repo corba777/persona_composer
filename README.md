@@ -3,13 +3,15 @@
 </p>
 
 <p align="center">
-  <em>compose the character — don't paste another monolith</em>
+  <em>design of experiments for agent character — not another prompt paste</em>
 </p>
 
 <p align="center">
   <strong>Prompt compiler for LLM agents.</strong>
-  Modular Markdown → XML system prompt + hashed experiment manifest.<br/>
-  Toggle a trait. Resolve conflicts explicitly. Vendor skills without editing upstream.
+  Modular Markdown → XML system prompt <em>and</em> Agent Skill Markdown —
+  one source, multi-target.<br/>
+  <strong>Run 2<sup>k</sup> trait ablations with hashed manifests.</strong>
+  Core never calls an LLM — inject a callable or rebuild offline.
 </p>
 
 <p align="center">
@@ -33,9 +35,9 @@
 
 ---
 
-Markdown modules are the *source*. The composed XML prompt is the *build artifact*. The composer is the *compiler* in between.
+Markdown modules are the *source*. The composed XML prompt (and optional Skill Markdown) is the *build artifact*. The composer is the *compiler* in between.
 
-**Why it exists:** character becomes composable and intervenable. Toggle a trait by adding/removing a file; conflict resolution is generated explicitly; every run emits a JSON **manifest** (receipt + recipe for recomposition). Community skill files can be vendored pristine and wired via thin overlays.
+**Why it exists:** most “prompt work” is hand-editing and gut feel. Persona Composer treats character as a **design of experiments**: a full **2<sup>k</sup> trait ablation** grid with baseline always on, invalid cells recorded in `index.json`, every cell a hashed **manifest** you can recompose. Same modules also compile to Claude Code / Cursor / Codex skill files — multi-target from one library. Conflict rules are generated explicitly; vendored skills stay pristine via overlays. The **core never calls an LLM** (inject `llm_call` / offline JSON for decompose & rewrite) so rebuilds stay deterministic and offline-capable.
 
 Implementations (same behavior, shared fixtures):
 
@@ -364,7 +366,7 @@ persona-compose factorial --identity ... --traits t1.md t2.md --baseline speech.
 
 ### Factorial ablation (2^k manifests)
 
-For trait ablation studies, factor a list of trait modules and compose every subset (including none). Baseline modules (speech, role, …) stay on in every cell. Cells that fail validation (e.g. mutual conflict at equal priority) are recorded in `index.json` with an `error` and skipped for prompt/manifest write — the rest of the grid continues.
+This is **design of experiments**, not hand-tuning a prompt. Factor a list of trait modules and compose every subset (including none). Baseline modules (speech, role, …) stay on in every cell. Mutual conflicts at equal priority are written to `index.json` with an `error`; the rest of the grid still builds — each valid cell is a hashed manifest (+ prompt) you can recompose later.
 
 ```bash
 persona-compose factorial \
