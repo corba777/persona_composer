@@ -1,6 +1,37 @@
-# Persona Composer
+<p align="center">
+  <img src="docs/assets/banner.svg" alt="Persona Composer" width="860"/>
+</p>
 
-A small, framework-agnostic **prompt compiler**: assemble an agent’s system prompt (XML) from modular Markdown files — identity, roles, traits, speech, relationships, output rules.
+<p align="center">
+  <em>compose the character — don't paste another monolith</em>
+</p>
+
+<p align="center">
+  <strong>Prompt compiler for LLM agents.</strong>
+  Modular Markdown → XML system prompt + hashed experiment manifest.<br/>
+  Toggle a trait. Resolve conflicts explicitly. Vendor skills without editing upstream.
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2ea44f?style=flat-square" alt="MIT license"/></a>
+  <a href="src/persona_composer"><img src="https://img.shields.io/badge/python-%E2%89%A53.10-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/></a>
+  <a href="ts"><img src="https://img.shields.io/badge/typescript-Node%20%E2%89%A518-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript"/></a>
+  <a href="#playground-optional"><img src="https://img.shields.io/badge/playground-Streamlit-FF4B4B?style=flat-square" alt="Streamlit playground"/></a>
+  <a href="https://github.com/corba777/persona_composer/actions"><img src="https://img.shields.io/github/actions/workflow/status/corba777/persona_composer/ci.yml?branch=main&style=flat-square&label=ci" alt="CI"/></a>
+</p>
+
+<p align="center">
+  <a href="#quick-start">Quick start</a>
+  · <a href="#module-format">Modules</a>
+  · <a href="#composed-skeleton">Skeleton</a>
+  · <a href="#factorial-ablation-2k-manifests">Factorial</a>
+  · <a href="#export-as-agent-skill-coding-agents">Skill export</a>
+  · <a href="#decompose--rewrite-optional-additive">Decompose / rewrite</a>
+  · <a href="#playground-optional">Playground</a>
+  · <a href="#license--scope">License</a>
+</p>
+
+---
 
 Markdown modules are the *source*. The composed XML prompt is the *build artifact*. The composer is the *compiler* in between.
 
