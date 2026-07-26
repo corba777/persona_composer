@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/banner.svg" alt="Persona Composer" width="860"/>
+  <img src="docs/assets/banner.png" alt="Persona Composer" width="860"/>
 </p>
 
 <p align="center">

@@ -11,16 +11,14 @@
     </linearGradient>
   </defs>
   <rect width="1280" height="320" fill="url(#bg)"/>
-  <!-- subtle grid -->
   <g stroke="#2a241e" stroke-width="1" opacity="0.55">
     <path d="M0 80 H1280 M0 160 H1280 M0 240 H1280"/>
     <path d="M160 0 V320 M320 0 V320 M480 0 V320 M640 0 V320 M800 0 V320 M960 0 V320 M1120 0 V320"/>
   </g>
-  <!-- diamond mark -->
   <g transform="translate(120,160)">
     <path d="M0,-52 L52,0 L0,52 L-52,0 Z" fill="url(#mark)"/>
     <path d="M0,-28 L28,0 L0,28 L-28,0 Z" fill="#14110f"/>
   </g>
-  <text x="220" y="148" fill="#f3ebe0" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="64" font-weight="650" letter-spacing="-1.5">Persona Composer</text>
-  <text x="220" y="198" fill="#a89880" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="22" letter-spacing="0.5">markdown modules ’ xml system prompt</text>
+  <text x="220" y="148" fill="#f3ebe0" font-family="Helvetica, Arial, sans-serif" font-size="64" font-weight="700">Persona Composer</text>
+  <text x="220" y="198" fill="#a89880" font-family="Menlo, Consolas, monospace" font-size="22">markdown modules -&gt; xml system prompt</text>
 </svg>
