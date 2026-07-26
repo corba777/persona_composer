@@ -327,7 +327,87 @@ Pass the XML string as the model’s **system** instruction (Gemini `system_inst
 ```bash
 persona-compose compose --identity ... --module-root ... [modules...] --out prompt.xml --manifest run.json
 persona-compose recompose run.json --module-root ... --out prompt.xml
+persona-compose skill --settings persona.settings.json
+persona-compose factorial --identity ... --traits t1.md t2.md --baseline speech.md --out-dir experiments/run-001
 ```
+
+### Factorial ablation (2^k manifests)
+
+For trait ablation studies, factor a list of trait modules and compose every subset (including none). Baseline modules (speech, role, …) stay on in every cell. Cells that fail validation (e.g. mutual conflict at equal priority) are recorded in `index.json` with an `error` and skipped for prompt/manifest write — the rest of the grid continues.
+
+```bash
+persona-compose factorial \
+  --identity modules/identity/guard.md \
+  --module-root modules \
+  --traits modules/traits/territorial.md modules/traits/cautious.md \
+  --baseline modules/speech/curt.md \
+  --out-dir experiments/run-001
+```
+
+```python
+from persona_composer import factorial_compose, write_factorial
+
+result = factorial_compose(
+    ROOT / "identity" / "guard.md",
+    [ROOT / "traits" / "territorial.md", ROOT / "traits" / "cautious.md"],
+    baseline=[ROOT / "speech" / "curt.md"],
+    module_root=ROOT,
+)
+write_factorial(result, Path("experiments/run-001"))
+# → index.json, manifests/<label>.json, prompts/<label>.xml
+```
+
+### Export as Agent Skill (coding agents)
+
+XML remains the system-prompt artifact for games/MAS. For Claude Code, Cursor, Codex, and Copilot, compile the **same modules** to Markdown and write host-discovery paths. IDE plugins are out of scope for v1 — hosts consume the **compiled** file on disk (same idea as caveman’s `SKILL.md`).
+
+Example `persona.settings.json`:
+
+```json
+{
+  "module_root": "./modules",
+  "identity": "identity/coder.md",
+  "modules": ["speech/curt.md", "traits/strict.md"],
+  "skill": {
+    "name": "persona",
+    "description": "Active coding persona. Use when writing or reviewing code."
+  },
+  "targets": [
+    { "kind": "skill_md", "path": ".claude/skills/persona/SKILL.md" },
+    { "kind": "skill_md", "path": ".cursor/skills/persona/SKILL.md" },
+    { "kind": "agents_md", "path": "AGENTS.md" },
+    { "kind": "copilot_instructions", "path": ".github/copilot-instructions.md" }
+  ]
+}
+```
+
+```bash
+persona-compose skill --settings persona.settings.json --manifest run.json
+# ad-hoc:
+persona-compose skill --identity modules/identity/coder.md --module-root modules \
+  --name persona --description "..." --out .claude/skills/persona/SKILL.md
+```
+
+```python
+from persona_composer import compose_skill, load_skill_settings, write_skill_targets
+
+settings = load_skill_settings("persona.settings.json")
+result = compose_skill(settings)
+write_skill_targets(result, settings, manifest_path=Path("run.json"))
+# result.skill_md  — with YAML frontmatter (name/description)
+# result.skill_body — Markdown body only (AGENTS.md / Copilot)
+# result.prompt_xml — existing XML prompt (unchanged pipeline)
+```
+
+Target kinds:
+
+| `kind` | Frontmatter | Typical path |
+|--------|-------------|--------------|
+| `skill_md` | yes (`name`, `description`) | `.claude/skills/<name>/SKILL.md`, `.cursor/skills/<name>/SKILL.md` |
+| `agents_md` | no | `AGENTS.md` (Codex / multi-agent) |
+| `copilot_instructions` | no | `.github/copilot-instructions.md` |
+
+Rebuild when you change modules or settings; the written file is what the agent loads.
 
 ### Decompose & rewrite (optional, additive)
 
@@ -374,7 +454,27 @@ persona-compose rewrite --text-file out.txt --from-manifest run.json --stub
 
 ### Playground (optional)
 
-Interactive Streamlit UI to compose a persona, call an LLM, and export Markdown/PDF.
+Interactive Streamlit UI (`playground/app.py`) to compose a persona, call an LLM, and export Markdown/PDF (exports include the full experiment **manifest**).
+
+**Tabs**
+
+| Tab | Purpose |
+|-----|---------|
+| **Chat** | Build identity / speech / traits / role / output_rules → compose XML → Generate |
+| **Decompose** | Monolith or vendored skill → draft modules via sidebar LLM as `llm_call` |
+| **Rewrite** | Apply `speech.mode: rewriter` stack (manifest or picked modules) to draft text |
+
+**Chat — Adaptation pipeline** (combinable, applies on Generate)
+
+| Flag | Effect |
+|------|--------|
+| **Extract / adapt first** | Distill **all** attached modules into `adaptation: extracted` overlays (strip host tooling). `source:` is library-relative or absolute so `parse_module` can hash provenance; omitted if unresolvable. |
+| **Include speech in prompt** | Speech enters composed XML (`mode: prompt`). Off + Post-rewrite → rewriter-only. |
+| **Post-rewrite output** | Compile speech as `mode: rewriter`; after the main reply, run `apply_rewriters_from_manifest`. Useful when a heavy identity skill (e.g. deep research) would otherwise override informal speech. |
+
+Compiled overlays appear under **Compiled modules**. Expander **Reproduce without UI** shows equivalent **CLI / Python / TypeScript** for the last successful Generate paths.
+
+**Backends**
 
 | Backend | When available |
 |---------|----------------|
@@ -396,7 +496,7 @@ streamlit run playground/app.py
 
 Without API keys, the sidebar shows **Vertex presets only**. See [`.env.example`](./.env.example).
 
-MD/PDF exports include the full experiment **manifest** (module hashes) so a run is reproducible.
+Vertex tips: Claude → provider `vertex_claude` (not Gemini client); Claude 4.6 model ids are unversioned (`claude-opus-4-6`) and often use location `global`. Gemini 3.5 Flash also uses `global`. The composer core never calls an LLM — the playground injects the sidebar model.
 
 ---
 
@@ -422,13 +522,22 @@ In your app, depend on the local package:
 }
 ```
 
-Or from GitHub (after clone + build in `ts/`):
+From GitHub, clone first, build the TypeScript package, then install its
+`ts/` directory:
 
 ```bash
-npm install git+https://github.com/corba777/persona_composer.git#main
+git clone https://github.com/corba777/persona_composer.git
+npm --prefix persona_composer/ts install
+npm --prefix persona_composer/ts run build
+npm install ./persona_composer/ts
 ```
 
-Consumers need the built `dist/` (run `npm run build` in `ts/` after clone).
+The repository root is not an npm package: its `package.json` lives under
+`ts/`. The generated `ts/dist/` directory is intentionally not committed, so
+installing the repository directly with
+`npm install git+https://github.com/corba777/persona_composer.git#main` may
+install the checkout but leave no importable JavaScript. Build `ts/` first as
+shown above.
 
 ### Library
 

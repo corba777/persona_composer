@@ -194,9 +194,12 @@ class Manifest:
     conflict_rules: list[dict[str, str]] = field(default_factory=list)
     rewriter_stack: list[ManifestModule] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    # Optional skill-export metadata (ignored by compose_from_manifest recipe).
+    artifact_format: str | None = None
+    exports: list[dict[str, str]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        data: dict[str, Any] = {
             "skeleton_version": self.skeleton_version,
             "timestamp": self.timestamp,
             "modules": [m.to_dict() for m in self.modules],
@@ -204,6 +207,11 @@ class Manifest:
             "rewriter_stack": [m.to_dict() for m in self.rewriter_stack],
             "warnings": self.warnings,
         }
+        if self.artifact_format is not None:
+            data["artifact_format"] = self.artifact_format
+        if self.exports:
+            data["exports"] = list(self.exports)
+        return data
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Manifest:
@@ -216,4 +224,6 @@ class Manifest:
                 ManifestModule.from_dict(m) for m in data.get("rewriter_stack", [])
             ],
             warnings=list(data.get("warnings", [])),
+            artifact_format=data.get("artifact_format"),
+            exports=list(data.get("exports", [])),
         )

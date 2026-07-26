@@ -128,6 +128,8 @@ export interface Manifest {
   conflict_rules: Record<string, string>[];
   rewriter_stack: ManifestModule[];
   warnings: string[];
+  artifact_format?: string;
+  exports?: Record<string, string>[];
 }
 
 export function manifestModuleToDict(m: ManifestModule): Record<string, unknown> {
@@ -146,7 +148,7 @@ export function manifestModuleToDict(m: ManifestModule): Record<string, unknown>
 }
 
 export function manifestToDict(m: Manifest): Record<string, unknown> {
-  return {
+  const data: Record<string, unknown> = {
     skeleton_version: m.skeleton_version,
     timestamp: m.timestamp,
     modules: m.modules.map(manifestModuleToDict),
@@ -154,6 +156,9 @@ export function manifestToDict(m: Manifest): Record<string, unknown> {
     rewriter_stack: m.rewriter_stack.map(manifestModuleToDict),
     warnings: m.warnings,
   };
+  if (m.artifact_format != null) data.artifact_format = m.artifact_format;
+  if (m.exports && m.exports.length) data.exports = m.exports;
+  return data;
 }
 
 export function manifestFromDict(data: Record<string, unknown>): Manifest {
@@ -177,5 +182,8 @@ export function manifestFromDict(data: Record<string, unknown>): Manifest {
       asMod,
     ),
     warnings: (data.warnings as string[]) ?? [],
+    artifact_format:
+      data.artifact_format != null ? String(data.artifact_format) : undefined,
+    exports: (data.exports as Record<string, string>[]) ?? [],
   };
 }

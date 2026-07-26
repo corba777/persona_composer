@@ -152,8 +152,20 @@ compose_from_manifest(manifest, skeleton=default) →   # recipe path: resolve p
 
 - **Decomposition workflow** ✅ (library + CLI): `decompose()` — LLM-assisted via injected `llm_call` / offline `llm_response` JSON; writes draft overlay modules for human review. Core never calls a model.
 - **Rewriter pipeline runner** ✅ (library + CLI stub): `apply_rewriters*` — post-generation style pass for `speech.mode: rewriter`; empty `rewriter_stack` is a no-op (backward compatible).
-- Factorial experiment helper: given a trait list, emit the 2^k manifest set for ablation studies.
+- **Factorial experiment helper** ✅ (library + CLI): `factorial_compose` / `persona-compose factorial` — given a trait list, emit the 2^k manifest (+ prompt) set for ablation studies; invalid cells recorded per-cell.
+- **Skill export** ✅ (library + CLI): `compose_skill` / `persona-compose skill` — export composed modules as Agent Skill Markdown (`SKILL.md`) and host targets (`AGENTS.md`, Copilot instructions) via `persona.settings.json`. Optional bridge; coding hosts often compile their own context — composer remains for *owned* agents.
+- **Playground (Streamlit)** ✅ (`playground/`): compose → call Vertex Gemini / Claude Model Garden (also OpenAI / Anthropic API when keys present) → export MD/PDF with full manifest. Tabs: **Chat**, **Decompose**, **Rewrite**. On Chat, **Adaptation pipeline** (combinable):
+  - *Extract / adapt first* — realtime-compile `adaptation: extracted` overlays for **all** attached modules (identity, speech, traits, role, output_rules); `source:` must resolve (library-relative or absolute); omit provenance if it cannot.
+  - *Post-rewrite output* — compile speech as `mode: rewriter`, restyle after Generate (good for heavy identity skills + informal speech, e.g. deep_research + pohuy).
+  - *Include speech in prompt* — optional; rewriter-only is valid.
+  Expander **Reproduce without UI** emits equivalent CLI / Python / TypeScript using the compiled module paths. Playground injects the sidebar model as `llm_call`; core still never calls an LLM.
+- **Type plugins** — half-done: `TypeRegistry` validates; `render.py` / `render.ts` still hard-code `ModuleType` slots. Finish when a real new type is needed (not ahead of need).
 - Persistence measurement harness lives in Amber Blade, not here — but manifests must carry enough info (hashes, versions) for its logs to join against.
+
+### Playground / model notes (not core invariants)
+
+- Skeleton order is fixed (`speech` before `<precedence>`). Strong identity + imported-skill precedence lines can make models (esp. Opus) drop speech register; **post-rewrite** or **extracted** speech overlays are the supported mitigations — do not special-case languages in the compiler.
+- Vertex: Claude models use `vertex_claude` (`publishers/anthropic`); Gemini uses `vertex_gemini`. Claude 4.6 ids are unversioned (`claude-opus-4-6`); location often `global`.
 
 ## Anti-goals
 

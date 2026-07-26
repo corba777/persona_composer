@@ -8,12 +8,21 @@ import { fileURLToPath } from "node:url";
 
 import { compose, composeFromManifest } from "./compose.js";
 import { CompositionError } from "./errors.js";
+import { factorialCompose, writeFactorial } from "./factorial.js";
 import type { SkeletonConfig } from "./models.js";
+import { composeSkill, writeSkillTargets } from "./skill_export.js";
+import {
+  loadSkillSettings,
+  skillSettingsAdhoc,
+} from "./skill_settings.js";
 
 function usage(): never {
   console.error(`Usage:
   persona-compose compose --identity <path> [--module-root <dir>] [--out <file>] [--manifest <file>] [--output-rules <text>] [modules...]
-  persona-compose recompose <manifest.json> [--module-root <dir>] [--out <file>] [--manifest <file>] [--no-verify-hashes] [--output-rules <text>]`);
+  persona-compose recompose <manifest.json> [--module-root <dir>] [--out <file>] [--manifest <file>] [--no-verify-hashes] [--output-rules <text>]
+  persona-compose skill --settings <persona.settings.json> [--manifest <file>] [--stdout]
+  persona-compose skill --identity <path> [--module-root <dir>] [--name <n>] [--description <d>] --out <SKILL.md> [--manifest <file>] [modules...]
+  persona-compose factorial --identity <path> --traits <t.md...> [--baseline <m.md...>] --out-dir <dir> [--module-root <dir>] [--no-prompts] [--max-traits <n>]`);
   process.exit(2);
 }
 
@@ -33,20 +42,39 @@ function hasFlag(args: string[], name: string): boolean {
   return true;
 }
 
+/** Collect remaining values after a multi-value flag until next --flag. */
+function takeMultiFlag(args: string[], name: string): string[] | undefined {
+  const ix = args.indexOf(name);
+  if (ix === -1) return undefined;
+  args.splice(ix, 1);
+  const values: string[] = [];
+  while (args.length && !args[0]!.startsWith("-")) {
+    values.push(args.shift()!);
+  }
+  return values;
+}
+
 export function main(argv: string[] = process.argv.slice(2)): number {
   if (!argv.length) usage();
   const args = [...argv];
   const command = args.shift();
 
-  const outPath = takeFlag(args, "--out");
-  const manifestOut = takeFlag(args, "--manifest");
-  const moduleRoot = takeFlag(args, "--module-root");
-  const outputRules = takeFlag(args, "--output-rules");
-  const skeleton: SkeletonConfig | undefined = outputRules
-    ? { output_rules: outputRules }
-    : undefined;
-
   try {
+    if (command === "skill") {
+      return runSkill(args);
+    }
+    if (command === "factorial") {
+      return runFactorial(args);
+    }
+
+    const outPath = takeFlag(args, "--out");
+    const manifestOut = takeFlag(args, "--manifest");
+    const moduleRoot = takeFlag(args, "--module-root");
+    const outputRules = takeFlag(args, "--output-rules");
+    const skeleton: SkeletonConfig | undefined = outputRules
+      ? { output_rules: outputRules }
+      : undefined;
+
     let result;
     if (command === "compose") {
       const identity = takeFlag(args, "--identity");
@@ -90,6 +118,103 @@ export function main(argv: string[] = process.argv.slice(2)): number {
     }
     throw exc;
   }
+}
+
+function runSkill(args: string[]): number {
+  const settingsPath = takeFlag(args, "--settings");
+  const outPath = takeFlag(args, "--out");
+  const manifestOut = takeFlag(args, "--manifest");
+  const moduleRoot = takeFlag(args, "--module-root");
+  const name = takeFlag(args, "--name") ?? "persona";
+  const description =
+    takeFlag(args, "--description") ?? "Composed coding persona.";
+  const outputRules = takeFlag(args, "--output-rules");
+  const toStdout = hasFlag(args, "--stdout");
+  const skeleton: SkeletonConfig | undefined = outputRules
+    ? { output_rules: outputRules }
+    : undefined;
+
+  const identity = takeFlag(args, "--identity");
+  const modules = args.filter((a) => !a.startsWith("-"));
+
+  const settings = settingsPath
+    ? loadSkillSettings(settingsPath)
+    : (() => {
+        if (!identity) {
+          console.error("error: skill requires --settings or --identity");
+          process.exit(1);
+        }
+        return skillSettingsAdhoc({
+          identity,
+          modules,
+          moduleRoot,
+          name,
+          description,
+          out: outPath,
+        });
+      })();
+
+  const result = composeSkill(settings, { skeleton });
+  const written = writeSkillTargets(result, settings, {
+    manifestPath: manifestOut,
+  });
+
+  if (toStdout || !settings.targets.length) {
+    process.stdout.write(result.skillMd);
+    if (!result.skillMd.endsWith("\n")) process.stdout.write("\n");
+  }
+
+  for (const p of written) {
+    console.error(`wrote ${p}`);
+  }
+  for (const w of result.manifest.warnings) {
+    console.error(`warning: ${w}`);
+  }
+  return 0;
+}
+
+function runFactorial(args: string[]): number {
+  const identity = takeFlag(args, "--identity");
+  const traits = takeMultiFlag(args, "--traits");
+  const baseline = takeMultiFlag(args, "--baseline") ?? [];
+  const moduleRoot = takeFlag(args, "--module-root");
+  const outDir = takeFlag(args, "--out-dir");
+  const noPrompts = hasFlag(args, "--no-prompts");
+  const outputRules = takeFlag(args, "--output-rules");
+  const maxTraitsRaw = takeFlag(args, "--max-traits");
+  const skeleton: SkeletonConfig | undefined = outputRules
+    ? { output_rules: outputRules }
+    : undefined;
+
+  if (!identity || !traits?.length || !outDir) {
+    console.error(
+      "error: factorial requires --identity, --traits, and --out-dir",
+    );
+    return 1;
+  }
+
+  const opts: Parameters<typeof factorialCompose>[2] = {
+    baseline,
+    moduleRoot,
+    libraryRoot: moduleRoot,
+    skeleton,
+  };
+  if (maxTraitsRaw != null) {
+    opts.maxTraits = Number(maxTraitsRaw);
+  }
+
+  const result = factorialCompose(identity, traits, opts);
+  const indexPath = writeFactorial(result, outDir, {
+    writePrompts: !noPrompts,
+  });
+  console.error(`wrote ${indexPath}`);
+  console.error(`cells: ${result.cells.length}`);
+  for (const cell of result.cells) {
+    if (cell.error) {
+      console.error(`error: [${cell.label}] ${cell.error}`);
+    }
+  }
+  return 0;
 }
 
 const isDirectRun =

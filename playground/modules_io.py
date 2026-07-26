@@ -64,10 +64,33 @@ def write_identity_md(work_dir: Path, *, name: str, body: str) -> Path:
     return path
 
 
-def write_speech_md(work_dir: Path, *, name: str, body: str) -> Path:
-    path = work_dir / f"speech_{_safe(name)}.md"
+def write_speech_md(
+    work_dir: Path,
+    *,
+    name: str,
+    body: str,
+    mode: str = "prompt",
+    source: str | None = None,
+    adaptation: str | None = None,
+    origin: str | None = None,
+) -> Path:
+    from playground.speech_apply import write_speech_module
+
+    return write_speech_module(
+        work_dir,
+        name=name,
+        body=body,
+        mode=mode,
+        source=source,
+        adaptation=adaptation,
+        origin=origin,
+    )
+
+
+def write_role_md(work_dir: Path, *, name: str, body: str) -> Path:
+    path = work_dir / f"role_{_safe(name)}.md"
     path.write_text(
-        f"---\ntype: speech\nname: {_safe(name)}\n---\n{body.strip()}\n",
+        f"---\ntype: role\nname: {_safe(name)}\n---\n{body.strip()}\n",
         encoding="utf-8",
     )
     return path
@@ -116,6 +139,8 @@ def ensure_typed_module(
         return write_identity_md(work_dir, name=name, body=content_body)
     if expected_type == "speech":
         return write_speech_md(work_dir, name=name, body=content_body)
+    if expected_type == "role":
+        return write_role_md(work_dir, name=name, body=content_body)
     if expected_type == "output_rules":
         return write_output_rules_md(work_dir, name=name, body=content_body)
     raise ValueError(f"unsupported wrap type: {expected_type}")
