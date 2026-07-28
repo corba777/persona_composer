@@ -52,6 +52,16 @@ Same deep-research identity + solar/inverter question — swap only the **speech
 <br/><em><code>ValeraPlumber</code> speech — pipes, Omsk</em>
 </td>
 </tr>
+<tr>
+<td width="50%" valign="top" align="center">
+<img src="docs/assets/playground/04_valera_speech_selected.png" alt="Playground with valera_plumber.md speech module attached" width="100%"/>
+<br/><em>Speech attached — <code>valera_plumber.md</code> uploaded</em>
+</td>
+<td width="50%" valign="top" align="center">
+<img src="docs/assets/playground/02_no_speech_report.png" alt="Playground without speech — cited research report" width="100%"/>
+<br/><em>No speech — cited research report</em>
+</td>
+</tr>
 </table>
 
 ---
@@ -564,12 +574,7 @@ Interactive Streamlit UI (`playground/app.py`) to compose a persona, call an LLM
 
 Compiled overlays appear under **Compiled modules**. Expander **Reproduce without UI** shows equivalent **CLI / Python / TypeScript** for the last successful Generate paths.
 
-Screenshots: A/B at the top under [See it (Playground)](#see-it-playground). Extra frame (full research report, no speech):
-
-<p align="center">
-  <img src="docs/assets/playground/02_no_speech_report.png" alt="Playground without speech — cited research report" width="860"/>
-  <br/><em>No speech — cited research-style report (insights + sources)</em>
-</p>
+Screenshots of a live A/B (no speech vs `ValeraPlumber`, plus speech-module picker) are at the top under [See it (Playground)](#see-it-playground).
 
 **Backends**
 
