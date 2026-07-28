@@ -8,6 +8,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from persona_composer.compliance import (
+    ComplianceRuleset,
+    enforce_compliance,
+    resolve_compliance_ruleset,
+)
 from persona_composer.errors import CompositionError, ValidationError
 from persona_composer.hashing import file_hash
 from persona_composer.models import (
@@ -88,12 +93,15 @@ def compose(
     library_root: Path | None = None,
     registry: TypeRegistry | None = None,
     timestamp: str | None = None,
+    compliance: bool | Path | str | ComplianceRuleset | None = None,
 ) -> CompositionResult:
     """
     Compose a system prompt from an identity module plus optional modules.
 
     ``module_root`` resolves vendor ``source:`` paths.
     ``library_root`` is scanned for trait-name typo warnings (defaults to module_root).
+    ``compliance`` — optional gate on the rendered XML (``True`` = builtin Default,
+    ``Path``/file string = rules Markdown, inline Markdown string, or ruleset).
     """
     skeleton = skeleton or SkeletonConfig()
     registry = registry or DEFAULT_REGISTRY
@@ -126,9 +134,14 @@ def compose(
     prompt_xml = render_prompt(
         parsed, resolutions, skeleton=skeleton, as_of=ts
     )
+    ruleset = resolve_compliance_ruleset(compliance)
+    if ruleset is not None:
+        enforce_compliance(prompt_xml, ruleset, artifact="composed prompt XML")
     manifest = _build_manifest(
         parsed, resolutions, warnings, skeleton, timestamp=ts
     )
+    if ruleset is not None:
+        manifest.compliance = ruleset.to_manifest_meta()
     return CompositionResult(prompt_xml=prompt_xml, manifest=manifest)
 
 
@@ -141,6 +154,7 @@ def compose_from_manifest(
     registry: TypeRegistry | None = None,
     verify_hashes: bool = True,
     timestamp: str | None = None,
+    compliance: bool | Path | str | ComplianceRuleset | None = None,
 ) -> CompositionResult:
     """Recompose from a saved manifest (recipe path)."""
     if isinstance(manifest, Path):
@@ -208,4 +222,5 @@ def compose_from_manifest(
         library_root=library_root,
         registry=registry,
         timestamp=timestamp or manifest.timestamp,
+        compliance=compliance,
     )

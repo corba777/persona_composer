@@ -18,10 +18,10 @@ import {
 
 function usage(): never {
   console.error(`Usage:
-  persona-compose compose --identity <path> [--module-root <dir>] [--out <file>] [--manifest <file>] [--output-rules <text>] [modules...]
-  persona-compose recompose <manifest.json> [--module-root <dir>] [--out <file>] [--manifest <file>] [--no-verify-hashes] [--output-rules <text>]
-  persona-compose skill --settings <persona.settings.json> [--manifest <file>] [--stdout]
-  persona-compose skill --identity <path> [--module-root <dir>] [--name <n>] [--description <d>] --out <SKILL.md> [--manifest <file>] [modules...]
+  persona-compose compose --identity <path> [--module-root <dir>] [--out <file>] [--manifest <file>] [--output-rules <text>] [--compliance] [--compliance-file <md>] [modules...]
+  persona-compose recompose <manifest.json> [--module-root <dir>] [--out <file>] [--manifest <file>] [--no-verify-hashes] [--output-rules <text>] [--compliance] [--compliance-file <md>]
+  persona-compose skill --settings <persona.settings.json> [--manifest <file>] [--stdout] [--compliance] [--compliance-file <md>]
+  persona-compose skill --identity <path> [--module-root <dir>] [--name <n>] [--description <d>] --out <SKILL.md> [--manifest <file>] [--compliance] [--compliance-file <md>] [modules...]
   persona-compose factorial --identity <path> --traits <t.md...> [--baseline <m.md...>] --out-dir <dir> [--module-root <dir>] [--no-prompts] [--max-traits <n>]`);
   process.exit(2);
 }
@@ -40,6 +40,14 @@ function hasFlag(args: string[], name: string): boolean {
   if (ix === -1) return false;
   args.splice(ix, 1);
   return true;
+}
+
+/** `--compliance-file` wins; else `--compliance` → builtin Default; else off. */
+function takeCompliance(args: string[]): boolean | string | undefined {
+  const file = takeFlag(args, "--compliance-file");
+  if (file) return file;
+  if (hasFlag(args, "--compliance")) return true;
+  return undefined;
 }
 
 /** Collect remaining values after a multi-value flag until next --flag. */
@@ -71,6 +79,7 @@ export function main(argv: string[] = process.argv.slice(2)): number {
     const manifestOut = takeFlag(args, "--manifest");
     const moduleRoot = takeFlag(args, "--module-root");
     const outputRules = takeFlag(args, "--output-rules");
+    const compliance = takeCompliance(args);
     const skeleton: SkeletonConfig | undefined = outputRules
       ? { output_rules: outputRules }
       : undefined;
@@ -86,6 +95,7 @@ export function main(argv: string[] = process.argv.slice(2)): number {
         skeleton,
         moduleRoot,
         libraryRoot: moduleRoot,
+        compliance,
       });
     } else if (command === "recompose") {
       const noVerify = hasFlag(args, "--no-verify-hashes");
@@ -96,6 +106,7 @@ export function main(argv: string[] = process.argv.slice(2)): number {
         moduleRoot,
         libraryRoot: moduleRoot,
         verifyHashes: !noVerify,
+        compliance,
       });
     } else {
       usage();
@@ -130,6 +141,7 @@ function runSkill(args: string[]): number {
     takeFlag(args, "--description") ?? "Composed coding persona.";
   const outputRules = takeFlag(args, "--output-rules");
   const toStdout = hasFlag(args, "--stdout");
+  const compliance = takeCompliance(args);
   const skeleton: SkeletonConfig | undefined = outputRules
     ? { output_rules: outputRules }
     : undefined;
@@ -154,7 +166,7 @@ function runSkill(args: string[]): number {
         });
       })();
 
-  const result = composeSkill(settings, { skeleton });
+  const result = composeSkill(settings, { skeleton, compliance });
   const written = writeSkillTargets(result, settings, {
     manifestPath: manifestOut,
   });

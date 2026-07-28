@@ -6,6 +6,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from persona_composer.compose import CompositionResult, compose
+from persona_composer.compliance import (
+    ComplianceRuleset,
+    enforce_compliance,
+    resolve_compliance_ruleset,
+)
 from persona_composer.models import Manifest, ModuleType, SkeletonConfig
 from persona_composer.parse import parse_module
 from persona_composer.render_skill import render_skill_body, render_skill_md
@@ -55,6 +60,7 @@ def compose_skill(
     *,
     skeleton: SkeletonConfig | None = None,
     timestamp: str | None = None,
+    compliance: bool | Path | str | ComplianceRuleset | None = None,
 ) -> SkillExportResult:
     """Validate/compose modules, then render Markdown skill + XML prompt."""
     if not isinstance(settings, SkillSettings):
@@ -67,6 +73,7 @@ def compose_skill(
         module_root=settings.module_root,
         library_root=settings.module_root,
         timestamp=timestamp,
+        compliance=compliance,
     )
     _attach_export_meta(
         composition, skill=settings.skill, targets=settings.targets
@@ -98,6 +105,11 @@ def compose_skill(
         skeleton=skeleton,
         as_of=ts,
     )
+    ruleset = resolve_compliance_ruleset(compliance)
+    if ruleset is not None:
+        enforce_compliance(skill_md, ruleset, artifact="skill Markdown")
+        if composition.manifest.compliance is None:
+            composition.manifest.compliance = ruleset.to_manifest_meta()
     return SkillExportResult(
         skill_md=skill_md,
         skill_body=skill_body,

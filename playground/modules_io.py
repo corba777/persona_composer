@@ -152,6 +152,7 @@ def compose_persona(
     extra_paths: list[Path],
     module_root: Path | None,
     output_rules: str | None = None,
+    compliance: bool | Path | str | None = None,
 ) -> ComposeBundle:
     work_dir = Path(tempfile.mkdtemp(prefix="persona_play_"))
     # Keep paths as given; composer resolves vendor sources via module_root
@@ -165,6 +166,7 @@ def compose_persona(
         module_root=module_root,
         library_root=module_root,
         skeleton=skeleton,
+        compliance=compliance,
     )
     return ComposeBundle(
         prompt_xml=result.prompt_xml,

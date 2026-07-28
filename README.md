@@ -27,6 +27,7 @@
   · <a href="#module-format">Modules</a>
   · <a href="#composed-skeleton">Skeleton</a>
   · <a href="#factorial-ablation-2k-manifests">Factorial</a>
+  · <a href="#compliance-gate-optional">Compliance</a>
   · <a href="#export-as-agent-skill-coding-agents">Skill export</a>
   · <a href="#decompose--rewrite-optional-additive">Decompose / rewrite</a>
   · <a href="#playground-optional">Playground</a>
@@ -359,8 +360,10 @@ Pass the XML string as the model’s **system** instruction (Gemini `system_inst
 
 ```bash
 persona-compose compose --identity ... --module-root ... [modules...] --out prompt.xml --manifest run.json
+persona-compose compose --identity ... --compliance [--compliance-file rules.md] ...
 persona-compose recompose run.json --module-root ... --out prompt.xml
 persona-compose skill --settings persona.settings.json
+persona-compose skill --settings persona.settings.json --compliance
 persona-compose factorial --identity ... --traits t1.md t2.md --baseline speech.md --out-dir experiments/run-001
 ```
 
@@ -389,6 +392,39 @@ result = factorial_compose(
 write_factorial(result, Path("experiments/run-001"))
 # → index.json, manifests/<label>.json, prompts/<label>.xml
 ```
+
+### Compliance gate (optional)
+
+Vendored / third-party `SKILL.md` bodies can contain instructions that conflict with your org rules (arbitrary `bash -c`, `curl | bash`, webhook exfil, “ignore previous instructions”, …). Enable an optional **post-compose** check — deterministic regex only, no LLM — that fails the build with the rule id(s) that matched.
+
+```bash
+persona-compose compose --identity id.md --compliance --out prompt.xml --manifest run.json
+persona-compose compose --identity id.md --compliance-file rules/compliance.md ...
+persona-compose skill --settings persona.settings.json --compliance
+```
+
+```python
+from persona_composer import compose, default_compliance_md
+
+# Builtin Default pack
+compose(identity, modules, compliance=True)
+
+# Inline / file Markdown (type: compliance + rules: or ### id sections)
+compose(identity, modules, compliance=Path("rules/compliance.md"))
+compose(identity, modules, compliance=default_compliance_md())  # editable string
+```
+
+```typescript
+import { compose, defaultComplianceMd } from "persona-composer";
+
+compose(identity, modules, { compliance: true });
+compose(identity, modules, { compliance: "rules/compliance.md" });
+compose(identity, modules, { compliance: defaultComplianceMd() });
+```
+
+On failure: `ValidationError` with lines like `compliance[no-bash-c]: … (matched: …)`. On success the manifest records `compliance: { checked, ruleset, rules_hash, rule_ids, … }`. Off by default so existing pipelines stay unchanged.
+
+Fixture / editable default: [`tests/fixtures/compliance/default.md`](./tests/fixtures/compliance/default.md).
 
 ### Export as Agent Skill (coding agents)
 
@@ -504,8 +540,31 @@ Interactive Streamlit UI (`playground/app.py`) to compose a persona, call an LLM
 | **Extract / adapt first** | Distill **all** attached modules into `adaptation: extracted` overlays (strip host tooling). `source:` is library-relative or absolute so `parse_module` can hash provenance; omitted if unresolvable. |
 | **Include speech in prompt** | Speech enters composed XML (`mode: prompt`). Off + Post-rewrite → rewriter-only. |
 | **Post-rewrite output** | Compile speech as `mode: rewriter`; after the main reply, run `apply_rewriters_from_manifest`. Useful when a heavy identity skill (e.g. deep research) would otherwise override informal speech. |
+| **Compliance gate** | Optional checkbox + editable (or upload) compliance Markdown. When on, compose/Generate fail with which rule(s) the compiled prompt violated. |
 
 Compiled overlays appear under **Compiled modules**. Expander **Reproduce without UI** shows equivalent **CLI / Python / TypeScript** for the last successful Generate paths.
+
+**Screenshots** (from a live playground session — Curt speech vs `valera_plumber` speech on the same deep-research identity; frames chosen without profanity)
+
+<p align="center">
+  <img src="docs/assets/playground/01_curt_speech.png" alt="Playground: Curt speech module + deep-research identity" width="860"/>
+  <br/><em>Default Curt speech — short sentences, blunt clarity — on an uploaded research skill</em>
+</p>
+
+<p align="center">
+  <img src="docs/assets/playground/02_deep_research_clean.png" alt="Playground: deep-research output without speech" width="860"/>
+  <br/><em>Same identity without a speech module — formal clarifying questions</em>
+</p>
+
+<p align="center">
+  <img src="docs/assets/playground/03_select_valera_plumber.png" alt="Playground: selecting valera_plumber.md as speech" width="860"/>
+  <br/><em>Attach speech via Library / upload — <code>speech/valera_plumber.md</code> over <code>vendor/valera_plumber/SKILL.md</code></em>
+</p>
+
+<p align="center">
+  <img src="docs/assets/playground/04_valera_style_clean.png" alt="Playground: Valera plumber-style output without profanity" width="860"/>
+  <br/><em>Valera speech — plumbing metaphors on the same solar / inverter research task</em>
+</p>
 
 **Backends**
 

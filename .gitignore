@@ -12,3 +12,7 @@ ts/dist/
 .env
 .env.local
 ts/test/.tmp-drafts/
+
+# Local screen recordings
+Screen Recording*.mov
+*.mov

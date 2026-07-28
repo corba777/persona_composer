@@ -4,6 +4,12 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { compose, type CompositionResult } from "./compose.js";
+import {
+  complianceManifestMeta,
+  enforceCompliance,
+  resolveComplianceRuleset,
+  type ComplianceInput,
+} from "./compliance.js";
 import type { Manifest, SkeletonConfig } from "./models.js";
 import { parseModule } from "./parse.js";
 import { renderSkillBody, renderSkillMd } from "./render_skill.js";
@@ -39,7 +45,11 @@ function attachExportMeta(
 
 export function composeSkill(
   settingsInput: SkillSettings | string,
-  options: { skeleton?: SkeletonConfig; timestamp?: string } = {},
+  options: {
+    skeleton?: SkeletonConfig;
+    timestamp?: string;
+    compliance?: ComplianceInput;
+  } = {},
 ): SkillExportResult {
   const settings =
     typeof settingsInput === "string"
@@ -51,6 +61,7 @@ export function composeSkill(
     moduleRoot: settings.moduleRoot,
     libraryRoot: settings.moduleRoot,
     timestamp: options.timestamp,
+    compliance: options.compliance,
   });
   attachExportMeta(composition, settings.skill, settings.targets);
 
@@ -78,6 +89,14 @@ export function composeSkill(
     skeleton: options.skeleton,
     asOf: ts,
   });
+
+  const ruleset = resolveComplianceRuleset(options.compliance);
+  if (ruleset) {
+    enforceCompliance(skillMd, ruleset, "skill Markdown");
+    if (!composition.manifest.compliance) {
+      composition.manifest.compliance = complianceManifestMeta(ruleset);
+    }
+  }
 
   return {
     skillMd,

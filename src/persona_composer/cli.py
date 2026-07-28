@@ -31,6 +31,17 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--out", type=Path, default=None)
     c.add_argument("--manifest", type=Path, default=None)
     c.add_argument("--output-rules", type=str, default=None)
+    c.add_argument(
+        "--compliance",
+        action="store_true",
+        help="Enable builtin Default compliance gate on composed XML",
+    )
+    c.add_argument(
+        "--compliance-file",
+        type=Path,
+        default=None,
+        help="Compliance rules Markdown (implies --compliance)",
+    )
 
     r = sub.add_parser("recompose", help="Compose from a saved manifest")
     r.add_argument("manifest_in", type=Path)
@@ -39,6 +50,8 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--manifest", type=Path, default=None)
     r.add_argument("--no-verify-hashes", action="store_true")
     r.add_argument("--output-rules", type=str, default=None)
+    r.add_argument("--compliance", action="store_true")
+    r.add_argument("--compliance-file", type=Path, default=None)
 
     d = sub.add_parser(
         "decompose",
@@ -122,6 +135,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     s.add_argument("--manifest", type=Path, default=None)
     s.add_argument("--output-rules", type=str, default=None)
+    s.add_argument("--compliance", action="store_true")
+    s.add_argument("--compliance-file", type=Path, default=None)
     s.add_argument(
         "--stdout",
         action="store_true",
@@ -171,8 +186,18 @@ def _compose_skeleton(args: argparse.Namespace) -> SkeletonConfig | None:
     return None
 
 
+def _compliance_arg(args: argparse.Namespace) -> bool | Path | None:
+    path = getattr(args, "compliance_file", None)
+    if path is not None:
+        return path
+    if getattr(args, "compliance", False):
+        return True
+    return None
+
+
 def _run_compose_commands(args: argparse.Namespace) -> int:
     skeleton = _compose_skeleton(args)
+    compliance = _compliance_arg(args)
     try:
         if args.command == "compose":
             result = compose(
@@ -181,6 +206,7 @@ def _run_compose_commands(args: argparse.Namespace) -> int:
                 skeleton=skeleton,
                 module_root=args.module_root,
                 library_root=args.module_root,
+                compliance=compliance,
             )
         else:
             result = compose_from_manifest(
@@ -189,6 +215,7 @@ def _run_compose_commands(args: argparse.Namespace) -> int:
                 module_root=args.module_root,
                 library_root=args.module_root,
                 verify_hashes=not args.no_verify_hashes,
+                compliance=compliance,
             )
     except CompositionError as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -319,7 +346,9 @@ def _run_skill(args: argparse.Namespace) -> int:
                 description=args.description,
                 out=args.out,
             )
-        result = compose_skill(settings, skeleton=skeleton)
+        result = compose_skill(
+            settings, skeleton=skeleton, compliance=_compliance_arg(args)
+        )
         written = write_skill_targets(
             result,
             settings,

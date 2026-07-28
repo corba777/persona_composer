@@ -103,8 +103,8 @@ Order is fixed so positional bias is *constant across experiments* rather than a
 ## Composition algorithm
 
 ```
-compose(identity, modules=[], skeleton=default) →
-compose_from_manifest(manifest, skeleton=default) →   # recipe path: resolve paths/hashes, then same pipeline
+compose(identity, modules=[], skeleton=default, compliance=off) →
+compose_from_manifest(manifest, skeleton=default, compliance=off) →   # recipe path: resolve paths/hashes, then same pipeline
   1. read + parse frontmatter of all inputs
   2. VALIDATE (see below); fail loudly, never render a known-bad prompt
   3. place bodies into skeleton slots (fixed order)
@@ -112,8 +112,10 @@ compose_from_manifest(manifest, skeleton=default) →   # recipe path: resolve p
        for each mutual conflicting pair among active traits:
          higher priority governs; equal priority = validation error
   5. render XML
-  6. write manifest JSON
-  7. return (prompt_xml, manifest)
+  6. optional COMPLIANCE gate on rendered XML (and on skill Markdown for skill export);
+       any match → ValidationError with compliance[<rule-id>] lines
+  7. write manifest JSON (includes compliance receipt when gate ran)
+  8. return (prompt_xml, manifest)
 ```
 
 ## Validation rules (build-time errors, not runtime surprises)
@@ -125,6 +127,7 @@ compose_from_manifest(manifest, skeleton=default) →   # recipe path: resolve p
 - Two **active** traits with a **mutual** conflict **and equal priority** → error ("каша"/mush prevention: the model must never be left to average a conflict).
 - `conflicts` referencing a trait name that doesn't exist anywhere in the **module library** (discoverable modules on disk / in the consumer's module root) → warning (typo catcher). A name that exists in the library but is simply not in the *active* set is fine — no warning (ablation / factorial runs would be unusable otherwise). One-sided `conflicts` (A lists B, B does not list A) → no `<conflict_rule>`; **warning** in the manifest (`incomplete conflict pair … — no <conflict_rule> generated`).
 - `relationship` without `agent`/`status` → error.
+- **Optional compliance gate** (`compose(..., compliance=True|path|md)` / CLI `--compliance` / `--compliance-file`): when enabled, the compiled XML (and skill Markdown on skill export) is checked against a deterministic regex ruleset. Any match → **error** listing `compliance[<rule-id>]: …`. Off by default. Builtin pack blocks common footguns (`bash -c`, `curl|bash`, encoded PowerShell, `rm -rf /`, webhook exfil, “ignore previous instructions”). Custom rules: Markdown with `type: compliance` frontmatter `rules:` and/or `### id` body sections (`pattern:` / `message:`). Receipt goes on the manifest as `compliance: { checked, ruleset, rules_hash, … }`. No LLM.
 
 ## Conventions
 
@@ -141,12 +144,14 @@ compose_from_manifest(manifest, skeleton=default) →   # recipe path: resolve p
 ## Implementation surface (v1)
 
 - Languages: **Python** (`src/persona_composer`) and **TypeScript** (`ts/`) — same behavior; golden fixtures shared under `tests/fixtures/`.
-- Ship both a **library API** (`compose`, `compose_from_manifest`) and a **CLI** that wraps it.
+- Ship both a **library API** (`compose`, `compose_from_manifest`, optional `compliance=`) and a **CLI** that wraps it (`--compliance` / `--compliance-file`).
+- Compliance helpers: `default_compliance_md` / `parse_compliance_md` / `check_compliance` / `enforce_compliance` (Python + TS parity).
 
 ## Testing
 
 - Golden tests: fixed module set → byte-identical XML (skeleton stability).
 - Validation tests: each rule above has a failing fixture.
+- Compliance tests: default pack parse/match, custom MD, compose gate on/off, skill path when wired.
 - Property test: composing identity alone always yields valid XML.
 - **No LLM calls in unit tests.** Behavioral experiments (does the trait *hold*?) live in the consuming projects, not here — this repo tests the compiler, not the model.
 
@@ -155,11 +160,13 @@ compose_from_manifest(manifest, skeleton=default) →   # recipe path: resolve p
 - **Decomposition workflow** ✅ (library + CLI): `decompose()` — LLM-assisted via injected `llm_call` / offline `llm_response` JSON; writes draft overlay modules for human review. Core never calls a model.
 - **Rewriter pipeline runner** ✅ (library + CLI stub): `apply_rewriters*` — post-generation style pass for `speech.mode: rewriter`; empty `rewriter_stack` is a no-op (backward compatible).
 - **Factorial experiment helper** ✅ (library + CLI): `factorial_compose` / `persona-compose factorial` — given a trait list, emit the 2^k manifest (+ prompt) set for ablation studies; invalid cells recorded per-cell.
+- **Compliance gate** ✅ (library + CLI + playground): optional `compliance=` / `--compliance` / `--compliance-file` — regex ruleset against composed XML and skill Markdown; fail compose with per-rule diagnostics. Builtin Default pack + editable MD in Streamlit.
 - **Skill export** ✅ (library + CLI): `compose_skill` / `persona-compose skill` — export composed modules as Agent Skill Markdown (`SKILL.md`) and host targets (`AGENTS.md`, Copilot instructions) via `persona.settings.json`. Optional bridge; coding hosts often compile their own context — composer remains for *owned* agents.
 - **Playground (Streamlit)** ✅ (`playground/`): compose → call Vertex Gemini / Claude Model Garden (also OpenAI / Anthropic API when keys present) → export MD/PDF with full manifest. Tabs: **Chat**, **Decompose**, **Rewrite**. On Chat, **Adaptation pipeline** (combinable):
   - *Extract / adapt first* — realtime-compile `adaptation: extracted` overlays for **all** attached modules (identity, speech, traits, role, output_rules); `source:` must resolve (library-relative or absolute); omit provenance if it cannot.
   - *Post-rewrite output* — compile speech as `mode: rewriter`, restyle after Generate (good for heavy identity skills + informal speech, e.g. deep_research + pohuy).
   - *Include speech in prompt* — optional; rewriter-only is valid.
+  Optional **Compliance gate**: checkbox + editable/upload Markdown (default pack pre-filled); compose/Generate fail with per-rule diagnostics when enabled.
   Expander **Reproduce without UI** emits equivalent CLI / Python / TypeScript using the compiled module paths. Playground injects the sidebar model as `llm_call`; core still never calls an LLM.
 - **Type plugins** — half-done: `TypeRegistry` validates; `render.py` / `render.ts` still hard-code `ModuleType` slots. Finish when a real new type is needed (not ahead of need).
 - Persistence measurement harness lives in Amber Blade, not here — but manifests must carry enough info (hashes, versions) for its logs to join against.

@@ -197,6 +197,8 @@ class Manifest:
     # Optional skill-export metadata (ignored by compose_from_manifest recipe).
     artifact_format: str | None = None
     exports: list[dict[str, str]] = field(default_factory=list)
+    # Optional compliance gate receipt (when compose(..., compliance=...) enabled).
+    compliance: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         data: dict[str, Any] = {
@@ -211,6 +213,8 @@ class Manifest:
             data["artifact_format"] = self.artifact_format
         if self.exports:
             data["exports"] = list(self.exports)
+        if self.compliance is not None:
+            data["compliance"] = dict(self.compliance)
         return data
 
     @classmethod
@@ -226,4 +230,5 @@ class Manifest:
             warnings=list(data.get("warnings", [])),
             artifact_format=data.get("artifact_format"),
             exports=list(data.get("exports", [])),
+            compliance=data.get("compliance"),
         )

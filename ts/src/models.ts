@@ -130,6 +130,7 @@ export interface Manifest {
   warnings: string[];
   artifact_format?: string;
   exports?: Record<string, string>[];
+  compliance?: Record<string, unknown>;
 }
 
 export function manifestModuleToDict(m: ManifestModule): Record<string, unknown> {
@@ -158,6 +159,7 @@ export function manifestToDict(m: Manifest): Record<string, unknown> {
   };
   if (m.artifact_format != null) data.artifact_format = m.artifact_format;
   if (m.exports && m.exports.length) data.exports = m.exports;
+  if (m.compliance != null) data.compliance = m.compliance;
   return data;
 }
 
@@ -185,5 +187,9 @@ export function manifestFromDict(data: Record<string, unknown>): Manifest {
     artifact_format:
       data.artifact_format != null ? String(data.artifact_format) : undefined,
     exports: (data.exports as Record<string, string>[]) ?? [],
+    compliance:
+      data.compliance != null
+        ? (data.compliance as Record<string, unknown>)
+        : undefined,
   };
 }

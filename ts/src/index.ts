@@ -11,6 +11,22 @@ export {
 export type { DecompositionResult, ModuleSuggestion } from "./decompose.js";
 export { CompositionError, ValidationError } from "./errors.js";
 export {
+  checkCompliance,
+  complianceManifestMeta,
+  defaultComplianceMd,
+  defaultComplianceRuleset,
+  enforceCompliance,
+  loadComplianceRuleset,
+  parseComplianceMd,
+  resolveComplianceRuleset,
+} from "./compliance.js";
+export type {
+  ComplianceInput,
+  ComplianceRule,
+  ComplianceRuleset,
+  ComplianceViolation,
+} from "./compliance.js";
+export {
   cellLabel,
   factorialCompose,
   sanitizeLabel,

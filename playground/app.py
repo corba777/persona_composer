@@ -51,6 +51,9 @@ from playground.module_apply import compile_persona_modules  # noqa: E402
 from playground.snippets import build_repro_snippets  # noqa: E402
 from playground.workflows import render_decompose_tab, render_rewrite_tab  # noqa: E402
 
+from persona_composer.compliance import default_compliance_md  # noqa: E402
+from persona_composer.errors import ValidationError  # noqa: E402
+
 st.set_page_config(
     page_title="Persona Composer Playground",
     page_icon="◆",
@@ -84,6 +87,8 @@ if "persona_compile_cache" not in st.session_state:
     st.session_state.persona_compile_cache = {}
 if "persona_compile_notes" not in st.session_state:
     st.session_state.persona_compile_notes = []
+if "compliance_md" not in st.session_state:
+    st.session_state.compliance_md = default_compliance_md()
 if "last_compose_paths" not in st.session_state:
     st.session_state.last_compose_paths = None
 if "work_dir" not in st.session_state:
@@ -492,6 +497,57 @@ with tab_chat:
             and not persona_post_rewrite
         ):
             st.warning("Speech is attached but neither in-prompt nor Post-rewrite is on.")
+
+        st.markdown("**Compliance gate** *(optional)*")
+        use_compliance = st.checkbox(
+            "Check composed prompt against compliance rules",
+            value=False,
+            key="compliance_on",
+            help=(
+                "When on, compose fails if the compiled XML matches a rule "
+                "(e.g. bash -c, curl|bash). Uses the builtin Default pack "
+                "below (editable). Deterministic regex — no LLM."
+            ),
+        )
+        compliance_arg: bool | str | None = None
+        if use_compliance:
+            st.caption(
+                "Builtin **Default** pack is pre-filled (shell footguns, webhook "
+                "exfil, ignore-safety). Edit, upload a replacement, or reset."
+            )
+            c1, c2 = st.columns([1, 1])
+            with c1:
+                compliance_up = st.file_uploader(
+                    "Upload compliance Markdown (optional)",
+                    type=["md", "markdown", "txt"],
+                    key="compliance_up",
+                    help="Replaces the editor contents with the uploaded file.",
+                )
+            with c2:
+                if st.button("Reset to Default pack", key="compliance_reset"):
+                    st.session_state.compliance_md = default_compliance_md()
+                    st.rerun()
+            if compliance_up is not None:
+                st.session_state.compliance_md = compliance_up.getvalue().decode(
+                    "utf-8", errors="replace"
+                )
+            # Ensure Default is present if session was cleared somehow
+            if not str(st.session_state.get("compliance_md") or "").strip():
+                st.session_state.compliance_md = default_compliance_md()
+            st.text_area(
+                "Compliance rules (Markdown)",
+                key="compliance_md",
+                height=220,
+                help=(
+                    "Default pack from persona_composer.compliance. "
+                    "Frontmatter `rules:` and/or `### id` sections with "
+                    "`pattern:` / `message:`."
+                ),
+            )
+            md = str(st.session_state.compliance_md or "").strip()
+            # Empty editor → still use builtin Default (True), not fail
+            compliance_arg = md if md else True
+
         if st.session_state.persona_compile_notes:
             with st.expander("Compiled modules", expanded=False):
                 for note in st.session_state.persona_compile_notes:
@@ -543,11 +599,14 @@ with tab_chat:
                     identity_path=preview_identity,
                     extra_paths=preview_extras,
                     module_root=module_root if module_root.is_dir() else None,
+                    compliance=compliance_arg,
                 )
                 composed_xml = bundle.prompt_xml
                 warnings = bundle.warnings
                 st.session_state.last_prompt = composed_xml
                 st.session_state.last_manifest = json.loads(bundle.manifest_json)
+            except ValidationError as exc:
+                st.error("Compose failed:\n" + "\n".join(exc.errors))
             except Exception as exc:
                 st.error(f"Compose failed: {exc}")
         else:
@@ -688,6 +747,7 @@ with tab_chat:
                             identity_path=run_identity,
                             extra_paths=run_extras,
                             module_root=root,
+                            compliance=compliance_arg,
                         )
                     prompt_xml = bundle.prompt_xml
                     manifest = json.loads(bundle.manifest_json)
@@ -730,6 +790,9 @@ with tab_chat:
                         "persona_extract": persona_extract,
                         "persona_post_rewrite": persona_post_rewrite,
                     }
+                except ValidationError as exc:
+                    st.session_state.last_error = "\n".join(exc.errors)
+                    st.session_state.last_response = ""
                 except Exception as exc:
                     st.session_state.last_error = str(exc)
                     st.session_state.last_response = ""

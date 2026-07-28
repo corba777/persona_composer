@@ -25,6 +25,12 @@ import {
   resolveConflicts,
   validateModules,
 } from "./validate.js";
+import {
+  complianceManifestMeta,
+  enforceCompliance,
+  resolveComplianceRuleset,
+  type ComplianceInput,
+} from "./compliance.js";
 
 export interface CompositionResult {
   promptXml: string;
@@ -89,6 +95,8 @@ export interface ComposeOptions {
   libraryRoot?: string;
   registry?: TypeRegistry;
   timestamp?: string;
+  /** Optional compliance gate (true = builtin Default, path/markdown, or ruleset). */
+  compliance?: ComplianceInput;
 }
 
 export function compose(
@@ -129,6 +137,10 @@ export function compose(
   const resolutions = resolveConflicts(traits);
   const ts = options.timestamp ?? new Date().toISOString();
   const promptXml = renderPrompt(parsed, resolutions, skeleton, ts);
+  const ruleset = resolveComplianceRuleset(options.compliance);
+  if (ruleset) {
+    enforceCompliance(promptXml, ruleset, "composed prompt XML");
+  }
   const manifest = buildManifest(
     parsed,
     resolutions,
@@ -136,6 +148,9 @@ export function compose(
     skeleton,
     ts,
   );
+  if (ruleset) {
+    manifest.compliance = complianceManifestMeta(ruleset);
+  }
   return toResult(promptXml, manifest);
 }
 
