@@ -1,0 +1,7 @@
+title: persona_composer
+description: Prompt compiler for LLM agents — modular Markdown to XML system prompts and Agent Skill Markdown, with hashed manifests and optional compliance.
+theme: minima
+baseurl: "/persona_composer"
+url: "https://corba777.github.io"
+
+markdown: kramdown
