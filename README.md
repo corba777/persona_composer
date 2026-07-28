@@ -32,6 +32,7 @@
   · <a href="#export-as-agent-skill-coding-agents">Skill export</a>
   · <a href="#decompose--rewrite-optional-additive">Decompose / rewrite</a>
   · <a href="#playground-optional">Playground setup</a>
+  · <a href="#prior-art">Prior art</a>
   · <a href="#license--scope">License</a>
 </p>
 
@@ -78,6 +79,10 @@ Implementations (same behavior, shared fixtures):
 | TypeScript (Node ≥ 18) | `ts/` | `persona-composer` |
 
 Design notes and invariants live in [`CLAUDE.md`](./CLAUDE.md).
+
+### Prior art
+
+Related work occupies neighboring niches. [DSPy](https://github.com/stanfordnlp/dspy) optimizes prompts (and pipelines) against a metric; its “modules” are code you program, not Markdown character packs you toggle. [POML](https://github.com/microsoft/poml) decomposes a prompt into typed sections with imports — closer to authoring structure than to experiment manifests. Neither treats a composed persona as a **hashed, recomposable receipt**: here every run pins module content and skeleton version, so ablation cells and skill exports stay rebuildable offline. Optional compliance is a build check on that artifact, not a training loop.
 
 ---
 
