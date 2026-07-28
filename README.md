@@ -23,16 +23,36 @@
 </p>
 
 <p align="center">
-  <a href="#quick-start">Quick start</a>
+  <a href="#see-it-playground">See it</a>
+  · <a href="#quick-start">Quick start</a>
   · <a href="#module-format">Modules</a>
   · <a href="#composed-skeleton">Skeleton</a>
   · <a href="#factorial-ablation-2k-manifests">Factorial</a>
   · <a href="#compliance-gate-optional">Compliance</a>
   · <a href="#export-as-agent-skill-coding-agents">Skill export</a>
   · <a href="#decompose--rewrite-optional-additive">Decompose / rewrite</a>
-  · <a href="#playground-optional">Playground</a>
+  · <a href="#playground-optional">Playground setup</a>
   · <a href="#license--scope">License</a>
 </p>
+
+---
+
+### See it (Playground)
+
+Same deep-research identity + solar/inverter question — swap only the **speech** module. ([Setup →](#playground-optional))
+
+<table>
+<tr>
+<td width="50%" valign="top" align="center">
+<img src="docs/assets/playground/01_no_speech_prompt.png" alt="Playground without speech — formal clarifying questions" width="100%"/>
+<br/><em>No speech — formal clarifying questions</em>
+</td>
+<td width="50%" valign="top" align="center">
+<img src="docs/assets/playground/03_valera_omsk_pipes.png" alt="Playground with ValeraPlumber speech — pipes and Omsk" width="100%"/>
+<br/><em><code>ValeraPlumber</code> speech — pipes, Omsk</em>
+</td>
+</tr>
+</table>
 
 ---
 
@@ -544,26 +564,11 @@ Interactive Streamlit UI (`playground/app.py`) to compose a persona, call an LLM
 
 Compiled overlays appear under **Compiled modules**. Expander **Reproduce without UI** shows equivalent **CLI / Python / TypeScript** for the last successful Generate paths.
 
-**Screenshots** (from a live playground session — Curt speech vs `valera_plumber` speech on the same deep-research identity; frames chosen without profanity)
+Screenshots: A/B at the top under [See it (Playground)](#see-it-playground). Extra frame (full research report, no speech):
 
 <p align="center">
-  <img src="docs/assets/playground/01_curt_speech.png" alt="Playground: Curt speech module + deep-research identity" width="860"/>
-  <br/><em>Default Curt speech — short sentences, blunt clarity — on an uploaded research skill</em>
-</p>
-
-<p align="center">
-  <img src="docs/assets/playground/02_deep_research_clean.png" alt="Playground: deep-research output without speech" width="860"/>
-  <br/><em>Same identity without a speech module — formal clarifying questions</em>
-</p>
-
-<p align="center">
-  <img src="docs/assets/playground/03_select_valera_plumber.png" alt="Playground: selecting valera_plumber.md as speech" width="860"/>
-  <br/><em>Attach speech via Library / upload — <code>speech/valera_plumber.md</code> over <code>vendor/valera_plumber/SKILL.md</code></em>
-</p>
-
-<p align="center">
-  <img src="docs/assets/playground/04_valera_style_clean.png" alt="Playground: Valera plumber-style output without profanity" width="860"/>
-  <br/><em>Valera speech — plumbing metaphors on the same solar / inverter research task</em>
+  <img src="docs/assets/playground/02_no_speech_report.png" alt="Playground without speech — cited research report" width="860"/>
+  <br/><em>No speech — cited research-style report (insights + sources)</em>
 </p>
 
 **Backends**
