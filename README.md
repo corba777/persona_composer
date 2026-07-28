@@ -48,18 +48,18 @@ Same deep-research identity + solar/inverter question — swap only the **speech
 <br/><em>No speech — formal clarifying questions</em>
 </td>
 <td width="50%" valign="top" align="center">
-<img src="docs/assets/playground/03_valera_omsk_pipes.png" alt="Playground with ValeraPlumber speech — pipes and Omsk" width="100%"/>
-<br/><em><code>ValeraPlumber</code> speech — pipes, Omsk</em>
+<img src="docs/assets/playground/04_valera_speech_selected.png" alt="Playground with valera_plumber.md speech module attached" width="100%"/>
+<br/><em>Speech attached — <code>valera_plumber.md</code></em>
 </td>
 </tr>
 <tr>
 <td width="50%" valign="top" align="center">
-<img src="docs/assets/playground/04_valera_speech_selected.png" alt="Playground with valera_plumber.md speech module attached" width="100%"/>
-<br/><em>Speech attached — <code>valera_plumber.md</code> uploaded</em>
-</td>
-<td width="50%" valign="top" align="center">
 <img src="docs/assets/playground/02_no_speech_report.png" alt="Playground without speech — cited research report" width="100%"/>
 <br/><em>No speech — cited research report</em>
+</td>
+<td width="50%" valign="top" align="center">
+<img src="docs/assets/playground/03_valera_omsk_pipes.png" alt="Playground with ValeraPlumber speech — pipes and Omsk" width="100%"/>
+<br/><em><code>ValeraPlumber</code> speech — pipes, Omsk</em>
 </td>
 </tr>
 </table>
